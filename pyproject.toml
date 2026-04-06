@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "euler-metric-naming"
-version = "0.1.0"
+version = "0.2.0"
 description = "Structured metric naming for the Euler ML ecosystem"
 requires-python = ">=3.9"
 dependencies = []

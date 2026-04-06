@@ -1,0 +1,104 @@
+# ==========================================
+# PyTorch & Machine Learning Specific
+# ==========================================
+
+# Model checkpoints and weights
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+/checkpoints/
+/weights/
+/models/
+
+# TensorBoard & Experiment Logs
+runs/
+logs/
+tb_logs/
+wandb/
+*.log
+tmp/
+
+# Datasets and data processing
+/data/
+/dataset/
+/datasets/
+*.csv
+*.tsv
+*.h5
+*.hdf5
+*.npy
+*.npz
+
+# ==========================================
+# Python Specific
+# ==========================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+.venv/
+.env
+pip-log.txt
+pip-delete-this-directory.txt
+
+# C extensions
+*.so
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ==========================================
+# Jupyter Notebooks
+# ==========================================
+.ipynb_checkpoints/
+
+# ==========================================
+# IDEs and OS Specific
+# ==========================================
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+weather_metric_depth_action_plan.md
+paper_constraints.md
+codex_bootstrap_prompt.md
+literature
+handoff.md
+model.md
+attention_and_diffusion_rgb.md
