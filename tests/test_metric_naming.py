@@ -1,6 +1,8 @@
 """Tests for the euler-metric-naming package."""
 from __future__ import annotations
 
+import importlib.util
+
 import pytest
 
 from euler_metric_naming import (
@@ -8,6 +10,7 @@ from euler_metric_naming import (
     DecomposedMetric,
     MetricDescription,
     MetricNamespace,
+    __version__,
     compare_stages,
     decompose,
     filter_glob,
@@ -16,13 +19,27 @@ from euler_metric_naming import (
     validate_metric_name,
 )
 
-
 # ═══════════════════════════════════════════════════════════════════════════
 #  MetricNamespace — construction
-# ══��════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════
 
 
 class TestMetricNamespaceInit:
+    def test_package_version(self):
+        assert __version__ == "0.2.0"
+
+    @pytest.mark.skipif(
+        importlib.util.find_spec("euler_dataset_contract") is None,
+        reason="optional modality contract is not installed",
+    )
+    def test_optional_contract_warns_for_unknown_modality(self):
+        with pytest.warns(UserWarning, match="not in euler-dataset-contract"):
+            MetricNamespace(
+                producer="test",
+                producer_version="0.1.0",
+                modalities=("unregistered_modality",),
+            )
+
     def test_basic_construction(self):
         ns = MetricNamespace(
             producer="euler_train.weather_metric",
@@ -96,6 +113,56 @@ class TestMetricNamespaceInit:
         )
         assert ns.modalities == ("depth", "rgb")
         assert ns.stages == ("prior", "final")
+
+    def test_custom_axes(self):
+        axes = {
+            "space": AxisDeclaration(
+                position=0,
+                values=("native", "metric"),
+            ),
+            "reduction": AxisDeclaration(
+                position=1,
+                values=("image_mean", "pixel_pool"),
+                optional=True,
+            ),
+        }
+        ns = MetricNamespace(
+            producer="euler_eval.depth",
+            producer_version="2.0.0",
+            modalities=("depth",),
+            context="eval",
+            axes=axes,
+        )
+
+        assert ns.axes("depth") == axes
+
+    def test_custom_axes_reject_duplicate_positions(self):
+        with pytest.raises(ValueError, match="share position"):
+            MetricNamespace(
+                producer="euler_eval.depth",
+                producer_version="2.0.0",
+                modalities=("depth",),
+                context="eval",
+                axes={
+                    "space": AxisDeclaration(position=0, values=("metric",)),
+                    "reduction": AxisDeclaration(
+                        position=0,
+                        values=("image_mean",),
+                    ),
+                },
+            )
+
+    def test_custom_axes_and_stages_are_mutually_exclusive(self):
+        with pytest.raises(ValueError, match="stages and custom axes"):
+            MetricNamespace(
+                producer="test",
+                producer_version="0.1.0",
+                modalities=("depth",),
+                stages=("prior",),
+                axes={
+                    "space": AxisDeclaration(position=0, values=("metric",)),
+                },
+            )
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -232,6 +299,10 @@ class TestEvalContext:
     def test_sys_uses_eval_context(self, ns):
         assert ns.sys("lr") == "sys.eval.lr"
 
+    def test_training_config_not_available(self, ns):
+        with pytest.raises(TypeError, match="only available in 'train'"):
+            ns.training_naming_config()
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 #  MetricNamespace — envelope generation
@@ -257,6 +328,44 @@ class TestEnvelopeGeneration:
         assert "axes" in envelope
         assert "metricDescriptions" in envelope
         assert envelope["metricDescriptions"]["absrel"]["isHigherBetter"] is False
+
+    def test_metric_set_envelope_with_custom_axes(self):
+        ns = MetricNamespace(
+            producer="euler_eval.depth",
+            producer_version="2.0.0",
+            modalities=("depth",),
+            context="eval",
+            axes={
+                "space": AxisDeclaration(
+                    position=0,
+                    values=("native", "metric"),
+                ),
+                "reduction": AxisDeclaration(
+                    position=1,
+                    values=("image_mean", "pixel_pool"),
+                    optional=True,
+                ),
+            },
+        )
+
+        envelope = ns.metric_set_envelope("depth")
+
+        assert list(envelope["axes"]) == ["space", "reduction"]
+        assert envelope["axes"]["space"]["values"] == ["native", "metric"]
+
+    def test_metric_set_envelope_copies_metadata(self):
+        ns = MetricNamespace(
+            producer="euler_eval.depth",
+            producer_version="2.0.0",
+            modalities=("depth",),
+            context="eval",
+        )
+        metadata = {"alignment": {"mode": "scale"}}
+
+        envelope = ns.metric_set_envelope("depth", metadata=metadata)
+        envelope["metadata"]["alignment"]["mode"] = "affine"
+
+        assert metadata == {"alignment": {"mode": "scale"}}
 
     def test_training_naming_config(self):
         ns = MetricNamespace(
@@ -285,6 +394,33 @@ class TestEnvelopeGeneration:
 
         sys_ns = config["namespaces"]["sys.train"]
         assert sys_ns["axes"] == {}
+
+    def test_training_namespace_entries_are_independent(self):
+        ns = MetricNamespace(
+            producer="test",
+            producer_version="0.1.0",
+            modalities=("depth", "rgb"),
+            stages=("prior", "final"),
+            descriptions={
+                "mae": MetricDescription(is_higher_better=False),
+            },
+        )
+        config = ns.training_naming_config()
+
+        config["namespaces"]["depth.train"]["axes"]["stage"]["values"].append(
+            "extra"
+        )
+        config["namespaces"]["depth.train"]["metricDescriptions"]["mae"][
+            "displayName"
+        ] = "Depth MAE"
+
+        assert config["namespaces"]["rgb.train"]["axes"]["stage"]["values"] == [
+            "prior",
+            "final",
+        ]
+        assert "displayName" not in config["namespaces"]["rgb.train"][
+            "metricDescriptions"
+        ]["mae"]
 
     def test_training_naming_config_no_stages(self):
         ns = MetricNamespace(
@@ -418,6 +554,22 @@ class TestDecompose:
         with pytest.raises(ValueError, match="no segments"):
             decompose("depth.train.", "depth.train", train_axes)
 
+    def test_result_recompose_preserves_axis_position_order(self):
+        axes = {
+            "space": AxisDeclaration(position=0, values=("metric",)),
+            "category": AxisDeclaration(position=1, values=("standard",)),
+            "reduction": AxisDeclaration(position=2, values=("image_mean",)),
+        }
+
+        result = decompose(
+            "depth.eval.metric.standard.image_mean.absrel",
+            "depth.eval",
+            axes,
+        )
+
+        assert isinstance(result, DecomposedMetric)
+        assert result.recompose() == "depth.eval.metric.standard.image_mean.absrel"
+
 
 class TestRecompose:
     def test_basic(self):
@@ -550,6 +702,10 @@ class TestValidateMetricName:
     def test_hyphen(self):
         with pytest.raises(ValueError, match="must match"):
             validate_metric_name("depth.train.my-loss")
+
+    def test_trailing_newline(self):
+        with pytest.raises(ValueError, match="must match"):
+            validate_metric_name("depth.train.loss\n")
 
 
 # ═══════════════════════════════════════════════════════════════════════════

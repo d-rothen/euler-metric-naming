@@ -4,7 +4,7 @@ from __future__ import annotations
 from fnmatch import fnmatch
 from typing import Any
 
-from .axes import AxisDeclaration, decompose
+from .axes import decompose
 
 
 def compare_stages(
@@ -12,7 +12,7 @@ def compare_stages(
     ns: Any,
     modality: str,
     metric_name: str,
-) -> dict[str, Any]:
+) -> dict[str | None, Any]:
     """Collect values of a base metric across all pipeline stages.
 
     Parameters
@@ -29,8 +29,8 @@ def compare_stages(
     Returns
     -------
     dict[str, Any]
-        Mapping of ``{stage_value: metric_value}``.  Metrics without a
-        stage are keyed as ``None``.
+        Mapping of ``{stage_value: metric_value}``. Metrics without a stage
+        are keyed as ``None``.
     """
     namespace = f"{modality}.{ns.context}"
     axes = ns.axes(modality)
@@ -97,9 +97,9 @@ def filter_glob(
 ) -> dict[str, Any]:
     """Return metrics whose fully-qualified names match a glob pattern.
 
-    Uses ``fnmatch`` rules: ``*`` matches within a segment, ``?``
-    matches a single character.  To match across dot-separated segments,
-    use multiple wildcards (e.g. ``"depth.train.*.prior.*"``).
+    Uses :func:`fnmatch.fnmatch` rules. In particular, ``*`` may match dots;
+    include literal dots in the pattern when the metric shape matters (for
+    example, ``"depth.train.*.prior.*"``).
 
     Parameters
     ----------

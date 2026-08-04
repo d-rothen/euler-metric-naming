@@ -1,290 +1,212 @@
-# euler-metric-naming
+<h1 align="center">euler-metric-naming</h1>
 
-Structured metric naming for the Euler ML ecosystem. Provides a single source of truth for metric name construction, validation, decomposition, and envelope generation across `euler-train`, `euler-eval`, and `euler-view`.
+<p align="center">
+  <em>Make flat ML metric keys self-describing.</em>
+</p>
 
-## Installation
+<p align="center">
+  <a href="https://pypi.org/project/euler-metric-naming/"><img alt="PyPI" src="https://img.shields.io/pypi/v/euler-metric-naming.svg"></a>
+  <a href="https://pypi.org/project/euler-metric-naming/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/euler-metric-naming.svg"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
+  <a href="https://github.com/d-rothen/euler-metric-naming/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/d-rothen/euler-metric-naming/actions/workflows/ci.yml/badge.svg"></a>
+</p>
 
+---
+
+Metric logs are usually flat dictionaries. A key such as `loss` is easy to
+write, but it does not say what was measured, where it came from, or how a
+downstream tool should group it. This package turns that key into a small,
+validated schema:
+
+```text
+loss = 0.089  →  depth.train.loss.final.log_radius = 0.089
 ```
+
+It builds metric names, declares the axes inside them, attaches display
+metadata, and serializes the declaration beside the values. It does not collect,
+store, or render metrics; it is the shared naming contract between those jobs.
+
+## Anatomy of a metric name
+
+| `depth` | `train` | `loss` | `final` | `log_radius` |
+|---|---|---|---|---|
+| scope | context | kind axis | stage axis *(optional)* | base metric |
+
+Together, `depth.train` is the **namespace**. The remaining declared axes make
+the hierarchy useful for indexing and filtering, while `log_radius` identifies
+the measurement itself:
+
+```text
+{scope}.{context}.{axes...}.{metric}
+```
+
+Axes are described by position and allowed values. Consumers can therefore
+decompose a name structurally instead of guessing from substrings.
+
+## Where it fits
+
+```mermaid
+flowchart LR
+    N["euler-metric-naming<br/><b>names + schema</b>"]
+    T["euler-train<br/><i>run metrics</i>"]
+    E["euler-eval<br/><i>evaluation results</i>"]
+    V["euler-view<br/><i>index, group, filter</i>"]
+    J["eval.json<br/><i>metricSet envelope</i>"]
+
+    N -->|keys + metric_naming| T
+    N -->|axes + descriptions| E
+    T --> V
+    E --> J
+```
+
+- [`euler-train`](https://github.com/d-rothen/euler-train) still logs a flat
+  `dict[str, float]`; the accompanying `metric_naming` payload tells
+  [`euler-view`](https://github.com/d-rothen/euler-view) how to interpret it.
+- [`euler-eval`](https://github.com/d-rothen/euler-eval), the package's main
+  consumer today, writes the same declarations as a `metricSet` envelope in
+  each `eval.json`.
+- `euler-metric-naming` owns the shared construction, validation,
+  decomposition, and serialization rules so producers do not drift apart.
+
+## Install
+
+```bash
 pip install euler-metric-naming
 ```
 
-Zero hard dependencies. Optional soft dependency on `euler-dataset-contract` for modality validation.
+The core package has no runtime dependencies. Install
+`euler-metric-naming[contract]` to additionally warn when a modality is not in
+the [`euler-dataset-contract`](https://github.com/d-rothen/euler-dataset-contract)
+registry.
 
-## Naming convention
+## Quick start: training metrics
 
-All metric names use dot-separated segments: `{scope}.{context}.{axes...}.{metric}`.
-
-```
-depth.train.loss.prior.log_radius
-├─────────┘ ├──┘ ├───┘ └─ base metric
-│           │    └──────── stage axis (optional)
-│           └───────────── kind axis
-└───────────────────────── namespace (scope.context)
-```
-
-- **Scope** is a modality (`depth`, `rgb`, `rays`) or a reserved prefix (`sys`).
-- **Context** is `train` or `eval`.
-- **Axes** are declared per-namespace (e.g. `kind`, `stage`) and decomposed structurally, never parsed from the string.
-
-Segment charset: `[a-z0-9_]` (first segment: `[a-z0-9]` only).
-
-## Quick start
-
-### Define a namespace
+Declare the modalities and any pipeline stages once:
 
 ```python
-from euler_metric_naming import MetricNamespace, MetricDescription
+from euler_metric_naming import MetricDescription, MetricNamespace
 
-ns = MetricNamespace(
-    producer="euler_train.weather_metric",
+metrics = MetricNamespace(
+    producer="euler_train.weather_model",
     producer_version="0.1.0",
-    modalities=("depth", "rgb", "rays"),
-    stages=("prior", "pred", "structure", "consolidation", "final"),
+    modalities=("depth", "rgb"),
+    stages=("prior", "final"),
     descriptions={
-        "log_radius": MetricDescription(is_higher_better=False, scale="log"),
-        "depth_mae": MetricDescription(is_higher_better=False, unit="meters"),
+        "depth_mae": MetricDescription(
+            display_name="Depth MAE",
+            is_higher_better=False,
+            unit="meters",
+        ),
     },
 )
 ```
 
-### Build metric keys
+Then use the namespace wherever values are logged:
 
 ```python
-# Losses — with pipeline stage
-ns.loss("depth", "prior", "log_radius")   # "depth.train.loss.prior.log_radius"
-ns.loss("depth", "final", "depth")         # "depth.train.loss.final.depth"
-
-# Losses — without stage
-ns.loss("depth", metric="total")           # "depth.train.loss.total"
-
-# Diagnostics and stats
-ns.diag("depth", "final", "depth_mae")    # "depth.train.diag.final.depth_mae"
-ns.stat("depth", "structure", "confidence") # "depth.train.stat.structure.confidence"
-
-# System metrics (learning rate, GPU stats, etc.)
-ns.sys("lr")                               # "sys.train.lr"
-ns.sys("lr", "geometry_encoder")           # "sys.train.lr.geometry_encoder"
-
-# Other modalities
-ns.loss("rgb", "weather", "dehaze")        # "rgb.train.loss.weather.dehaze"
-ns.loss("rays", "ray", "l1")              # "rays.train.loss.ray.l1"
-```
-
-Invalid calls raise `ValueError`:
-
-```python
-ns.loss("depth", "nonexistent_stage", "x")  # ValueError: unknown stage
-ns.loss("video", "prior", "x")              # ValueError: unknown modality
-```
-
-### Models without pipeline stages
-
-```python
-ns = MetricNamespace(
-    producer="euler_train.simple_baseline",
-    producer_version="0.1.0",
-    modalities=("depth",),
-)
-
-ns.loss("depth", metric="mae")    # "depth.train.loss.mae"
-ns.diag("depth", metric="rmse")   # "depth.train.diag.rmse"
-
-ns.loss("depth", "prior", "mae")  # ValueError: stages not declared
-```
-
-## Usage with euler-train
-
-`euler-train` accepts a `metric_naming` parameter that tells `euler-view` how to decompose, group, and filter the run's metrics. Generate it with `training_naming_config()` and pass it at run init:
-
-```python
-import euler_train
-from euler_metric_naming import MetricNamespace
-
-ns = MetricNamespace(
-    producer="euler_train.weather_metric",
-    producer_version="0.1.0",
-    modalities=("depth", "rgb"),
-    stages=("prior", "final"),
-)
-
-run = euler_train.init(
-    config=config,
-    metric_naming=ns.training_naming_config(),
-    stream=stream,
-)
-```
-
-Then use the namespace to build metric keys passed to `run.log()`:
-
-```python
-losses = {
-    ns.loss("depth", "prior", "log_radius"): prior_loss.item(),
-    ns.loss("depth", "final", "log_radius"): final_loss.item(),
-    ns.loss("depth", metric="total"): total_loss.item(),
-    ns.sys("lr"): scheduler.get_last_lr()[0],
+values = {
+    metrics.loss("depth", "prior", "log_radius"): 0.152,
+    metrics.diag("depth", "final", "depth_mae"): 0.283,
+    metrics.loss("depth", metric="total"): 1.234,
+    metrics.sys("lr"): 3e-5,
 }
-run.log(losses, step=step, epoch=epoch)
-```
 
-The `.log()` API is unchanged -- it still accepts a flat `dict[str, float]`. The keys just follow the naming convention now. When `metric_naming` is present, euler-train also namespaces its auto-collected GPU stats under `sys.train.*` (e.g. `sys.train.gpu_util_pct`).
-
-### What happens in euler-view
-
-The `metric_naming` payload is stored in `meta.json` and included in the stream init event. euler-view extracts it into `model_runs.metric_naming` and uses it to:
-
-1. Resolve `metric_namespace` for each metric row (e.g. `depth.train`, `sys.train`).
-2. Decompose metric names into axis values for grouping/filtering in the UI.
-3. Read metric descriptions for display formatting (scale, units, direction).
-
-Runs without `metric_naming` continue to work as before -- metrics are stored with `metric_namespace = NULL` and displayed as opaque flat names.
-
-### `training_naming_config()` output
-
-```python
-ns.training_naming_config()
 # {
-#     "producer_key": "euler_train.weather_metric",
-#     "producer_version": "0.1.0",
-#     "namespaces": {
-#         "depth.train": {
-#             "axes": {
-#                 "kind": {"position": 0, "optional": false, "values": ["loss", "diag", "stat"]},
-#                 "stage": {"position": 1, "optional": true, "values": ["prior", "final"]}
-#             },
-#             "metricDescriptions": {
-#                 "log_radius": {"isHigherBetter": false, "scale": "log"},
-#                 "depth_mae": {"isHigherBetter": false, "unit": "meters"}
-#             }
-#         },
-#         "rgb.train": { ... },
-#         "sys.train": {"axes": {}}
-#     }
+#   "depth.train.loss.prior.log_radius": 0.152,
+#   "depth.train.diag.final.depth_mae": 0.283,
+#   "depth.train.loss.total": 1.234,
+#   "sys.train.lr": 3e-5,
 # }
 ```
 
-`sys.train` is always included for training namespaces so that system metrics (`sys.train.lr`, `sys.train.gpu_util_pct`, etc.) are recognized by euler-view.
-
-## Decomposition
-
-Given a metric name and its namespace's axis declarations, `decompose` extracts axis values and the base metric:
+Pass the declaration beside those values when initializing `euler-train`:
 
 ```python
-from euler_metric_naming import decompose
+import euler_train
 
-axes = ns.axes("depth")
-result = decompose("depth.train.loss.prior.log_radius", "depth.train", axes)
-
-result.namespace  # "depth.train"
-result.axes       # {"kind": "loss", "stage": "prior"}
-result.metric     # "log_radius"
-```
-
-Optional axes that don't match are set to `None`:
-
-```python
-result = decompose("depth.train.loss.total", "depth.train", axes)
-result.axes  # {"kind": "loss", "stage": None}
-result.metric  # "total"
-```
-
-The algorithm guarantees that at least one segment is always left for the base metric name. If consuming an optional axis value would leave zero remaining segments, the axis is skipped.
-
-## Comparison and filtering
-
-```python
-from euler_metric_naming import compare_stages, filter_kind, filter_glob
-
-metrics = {
-    "depth.train.diag.prior.depth_mae": 0.42,
-    "depth.train.diag.final.depth_mae": 0.28,
-    "depth.train.loss.prior.log_radius": 0.15,
-    "depth.train.loss.total": 1.23,
-    "sys.train.lr": 3e-5,
-}
-
-# Compare one metric across pipeline stages
-compare_stages(metrics, ns, "depth", "depth_mae")
-# {"prior": 0.42, "final": 0.28}
-
-# All losses for a modality
-filter_kind(metrics, ns, "depth", "loss")
-# {"depth.train.loss.prior.log_radius": 0.15, "depth.train.loss.total": 1.23}
-
-# Glob matching
-filter_glob(metrics, "depth.train.*.prior.*")
-# {"depth.train.diag.prior.depth_mae": 0.42, "depth.train.loss.prior.log_radius": 0.15}
-```
-
-## Metric descriptions
-
-Attach display metadata to base metric names (after stripping namespace and axes). The same description applies to all axis combinations of that metric.
-
-```python
-from euler_metric_naming import MetricDescription
-
-descriptions = {
-    "log_radius": MetricDescription(
-        is_higher_better=False,
-        scale="log",
-        display_name="Log-Radius L1",
-    ),
-    "depth_mae": MetricDescription(
-        is_higher_better=False,
-        scale="linear",
-        unit="meters",
-    ),
-    "confidence": MetricDescription(
-        is_higher_better=True,
-        min_value=0.0,
-        max_value=1.0,
-    ),
-}
-
-ns = MetricNamespace(
-    producer="euler_train.my_model",
-    producer_version="0.1.0",
-    modalities=("depth",),
-    descriptions=descriptions,
+run = euler_train.init(
+    config=config,
+    metric_naming=metrics.training_naming_config(),
+    stream=stream,
 )
+run.log(values, step=step, epoch=epoch)
 ```
 
-Descriptions are serialized to camelCase JSON in the `metricDescriptions` field of the naming config and metric set envelopes.
+Stages are optional. Omit `stages=` and build names with
+`metrics.loss("depth", metric="mae")` when a model has no staged pipeline.
+Invalid modalities, stages, or name segments raise `ValueError` at the point of
+construction.
 
 ## Evaluation envelopes
 
-For `euler-eval` producers, generate the `metricSet` envelope included in `eval.json`:
+Evaluation schemas often use axes such as space, category, and reduction rather
+than training's kind and stage. Supply those declarations directly:
 
 ```python
-eval_ns = MetricNamespace(
+from euler_metric_naming import AxisDeclaration, MetricDescription, MetricNamespace
+
+evaluation = MetricNamespace(
     producer="euler_eval.depth",
     producer_version="2.0.0",
     modalities=("depth",),
     context="eval",
+    axes={
+        "space": AxisDeclaration(
+            position=0,
+            values=("native", "metric"),
+        ),
+        "reduction": AxisDeclaration(
+            position=1,
+            values=("image_mean", "pixel_pool"),
+            optional=True,
+        ),
+    },
     descriptions={
-        "absrel": MetricDescription(is_higher_better=False, scale="linear"),
+        "absrel": MetricDescription(is_higher_better=False),
     },
 )
 
-eval_ns.metric_set_envelope("depth")
-# {
-#     "metricNamespace": "depth.eval",
-#     "producerKey": "euler_eval.depth",
-#     "producerVersion": "2.0.0",
-#     "sourceKind": "computed",
-#     "metadata": {},
-#     "axes": { ... },
-#     "metricDescriptions": { ... }
-# }
+metric_set = evaluation.metric_set_envelope("depth")
 ```
 
-## Package structure
+The resulting JSON-ready envelope declares `depth.eval`, its axes, producer
+provenance, and the display semantics of `absrel`. `euler-eval` places this
+object under `metricSet` next to the metric tree.
 
+## Read and filter names
+
+```python
+from euler_metric_naming import decompose, filter_kind
+
+parsed = decompose(
+    "depth.train.loss.prior.log_radius",
+    "depth.train",
+    metrics.axes("depth"),
+)
+
+parsed.axes       # {"kind": "loss", "stage": "prior"}
+parsed.metric     # "log_radius"
+parsed.recompose()  # "depth.train.loss.prior.log_radius"
+
+losses = filter_kind(values, metrics, "depth", "loss")
 ```
-euler_metric_naming/
-    __init__.py        # Public API exports
-    namespace.py       # MetricNamespace class
-    axes.py            # AxisDeclaration, decompose(), recompose()
-    descriptions.py    # MetricDescription dataclass
-    matching.py        # compare_stages(), filter_kind(), filter_glob()
-    _compat.py         # euler-dataset-contract soft import
+
+The public helpers also include `recompose`, `compare_stages`, `filter_glob`,
+and `validate_metric_name`. See the [API guide](docs/api.md) for payload shapes,
+description fields, matching behavior, and naming constraints.
+
+## Development
+
+```bash
+git clone https://github.com/d-rothen/euler-metric-naming.git
+cd euler-metric-naming
+uv sync --extra dev                 # or: pip install -e ".[dev]"
+uv run pytest
+uv run ruff check .
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for test and release guidance.
+
+## License
+
+[MIT](LICENSE) © Daniel Rothenpieler

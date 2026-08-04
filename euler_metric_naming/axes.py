@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
-_SEGMENT_RE = re.compile(r"^[a-z0-9_]+$")
-_FIRST_SEGMENT_RE = re.compile(r"^[a-z0-9]+$")
+_SEGMENT_RE = re.compile(r"[a-z0-9_]+")
+_FIRST_SEGMENT_RE = re.compile(r"[a-z0-9]+")
 
 
 @dataclass(frozen=True)
@@ -47,11 +47,9 @@ class DecomposedMetric:
     metric: str
 
     def recompose(self) -> str:
+        """Rebuild the metric name, preserving the decomposed axis order."""
         parts = [self.namespace]
-        for _axis_name, value in sorted(
-            self.axes.items(),
-            key=lambda kv: kv[0],
-        ):
+        for value in self.axes.values():
             if value is not None:
                 parts.append(value)
         parts.append(self.metric)
@@ -184,12 +182,12 @@ def validate_metric_name(name: str) -> None:
         raise ValueError(
             f"metric name {name!r} must have at least 2 dot-separated segments"
         )
-    if not _FIRST_SEGMENT_RE.match(segments[0]):
+    if not _FIRST_SEGMENT_RE.fullmatch(segments[0]):
         raise ValueError(
             f"first segment {segments[0]!r} must match [a-z0-9]+"
         )
     for seg in segments[1:]:
-        if not _SEGMENT_RE.match(seg):
+        if not _SEGMENT_RE.fullmatch(seg):
             raise ValueError(
                 f"segment {seg!r} must match [a-z0-9_]+"
             )

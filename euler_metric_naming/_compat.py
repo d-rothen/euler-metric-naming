@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 try:
-    from euler_dataset_contract import get_modality_meta_fields
+    from euler_dataset_contract import (  # type: ignore[import-not-found]
+        get_modality_meta_fields,
+    )
 
     _has_contract = True
 except ImportError:
@@ -14,7 +16,9 @@ def validate_modality(name: str) -> str | None:
     if not _has_contract:
         return None
     try:
-        get_modality_meta_fields(name)
-        return None
+        fields = get_modality_meta_fields(name)
     except (KeyError, ValueError):
         return f"unknown modality {name!r} (not in euler-dataset-contract registry)"
+    if fields is None:
+        return f"unknown modality {name!r} (not in euler-dataset-contract registry)"
+    return None

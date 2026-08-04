@@ -1,15 +1,18 @@
 """MetricNamespace — the primary API for structured metric naming."""
 from __future__ import annotations
 
+import re
 import warnings
+from copy import deepcopy
 from typing import Any
 
+from ._compat import validate_modality
 from .axes import AxisDeclaration, validate_metric_name
 from .descriptions import MetricDescription
-from ._compat import validate_modality
 
 _RESERVED_SCOPES = frozenset({"sys"})
 _TRAIN_KINDS = ("loss", "diag", "stat")
+_SEGMENT_RE = re.compile(r"[a-z0-9_]+")
 
 
 class MetricNamespace:
@@ -33,6 +36,11 @@ class MetricNamespace:
         segment of the namespace (e.g. ``depth.train`` vs ``depth.eval``).
     descriptions:
         Optional mapping of base metric name to :class:`MetricDescription`.
+    axes:
+        Optional custom axis declarations. When supplied, these replace the
+        default training ``kind`` and ``stage`` axes. This is useful for
+        evaluation producers whose axes describe spaces, categories, or
+        reductions instead.
     """
 
     def __init__(
@@ -43,6 +51,7 @@ class MetricNamespace:
         stages: tuple[str, ...] | list[str] | None = None,
         context: str = "train",
         descriptions: dict[str, MetricDescription] | None = None,
+        axes: dict[str, AxisDeclaration] | None = None,
     ) -> None:
         if context not in ("train", "eval"):
             raise ValueError(f"context must be 'train' or 'eval', got {context!r}")
@@ -53,7 +62,13 @@ class MetricNamespace:
         self._stages = tuple(stages) if stages is not None else None
         self._context = context
         self._descriptions = dict(descriptions) if descriptions else {}
+        self._custom_axes = dict(axes) if axes is not None else None
         self._sys_used = False
+
+        if self._custom_axes is not None:
+            if self._stages is not None:
+                raise ValueError("stages and custom axes cannot be used together")
+            _validate_axes(self._custom_axes)
 
         for mod in self._modalities:
             if mod in _RESERVED_SCOPES:
@@ -147,14 +162,17 @@ class MetricNamespace:
     def axes(self, modality: str) -> dict[str, AxisDeclaration]:
         """Return axis declarations for a modality's namespace.
 
-        For training context, the axes are ``kind`` (required) and
-        optionally ``stage``.  For eval context, override this in a
-        subclass or use :meth:`axes_for_eval`.
+        Unless custom axes were supplied at construction, the axes are
+        ``kind`` (required) and, when stages were declared, ``stage``
+        (optional).
         """
         self._check_modality(modality)
         return self._build_axes()
 
     def _build_axes(self) -> dict[str, AxisDeclaration]:
+        if self._custom_axes is not None:
+            return dict(self._custom_axes)
+
         axes: dict[str, AxisDeclaration] = {
             "kind": AxisDeclaration(
                 position=0,
@@ -195,10 +213,7 @@ class MetricNamespace:
             "sourceKind": source_kind,
         }
 
-        if metadata:
-            envelope["metadata"] = metadata
-        else:
-            envelope["metadata"] = {}
+        envelope["metadata"] = deepcopy(metadata) if metadata is not None else {}
 
         axes = self._build_axes()
         if axes:
@@ -220,22 +235,27 @@ class MetricNamespace:
         This is stored on the model run and used by euler-view for
         metric decomposition and grouping.
         """
-        namespaces: dict[str, Any] = {}
+        if self._context != "train":
+            raise TypeError(
+                "training_naming_config() is only available in 'train' context, "
+                f"not {self._context!r}"
+            )
 
-        axes_dict = {
-            name: decl.to_dict() for name, decl in self._build_axes().items()
-        }
-        desc_dict = (
-            {name: desc.to_dict() for name, desc in self._descriptions.items()}
-            if self._descriptions
-            else None
-        )
+        namespaces: dict[str, Any] = {}
 
         for mod in self._modalities:
             ns_key = f"{mod}.{self._context}"
-            entry: dict[str, Any] = {"axes": axes_dict}
-            if desc_dict:
-                entry["metricDescriptions"] = desc_dict
+            entry: dict[str, Any] = {
+                "axes": {
+                    name: decl.to_dict()
+                    for name, decl in self._build_axes().items()
+                }
+            }
+            if self._descriptions:
+                entry["metricDescriptions"] = {
+                    name: desc.to_dict()
+                    for name, desc in self._descriptions.items()
+                }
             namespaces[ns_key] = entry
 
         # Include sys.{context} when sys metrics have been used or always
@@ -264,6 +284,11 @@ class MetricNamespace:
             raise TypeError(
                 f"loss/diag/stat helpers are only available in 'train' context, "
                 f"not {self._context!r}"
+            )
+        if self._custom_axes is not None:
+            raise TypeError(
+                f"{kind}() is unavailable with custom axes; "
+                "build the metric path from the declared axes instead"
             )
 
         self._check_modality(modality)
@@ -322,9 +347,26 @@ class MetricNamespace:
 
 def _validate_segment(value: str, label: str) -> None:
     """Validate a single metric name segment."""
-    import re
-
-    if not re.match(r"^[a-z0-9_]+$", value):
+    if not _SEGMENT_RE.fullmatch(value):
         raise ValueError(
             f"{label} {value!r} must match [a-z0-9_]+"
         )
+
+
+def _validate_axes(axes: dict[str, AxisDeclaration]) -> None:
+    """Validate custom axis names, declarations, and positions."""
+    positions: dict[int, str] = {}
+    for name, declaration in axes.items():
+        _validate_segment(name, "axis name")
+        if not isinstance(declaration, AxisDeclaration):
+            raise TypeError(
+                f"axis {name!r} must be an AxisDeclaration, "
+                f"got {type(declaration).__name__}"
+            )
+        previous = positions.get(declaration.position)
+        if previous is not None:
+            raise ValueError(
+                f"axes {previous!r} and {name!r} share position "
+                f"{declaration.position}"
+            )
+        positions[declaration.position] = name
