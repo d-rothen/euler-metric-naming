@@ -268,12 +268,39 @@ branches of each repository.
       (473 passed) and 3.13 with the contract extra (474 passed); node
       conformance 20 of 20; `generate_ts.py --check` and
       `generate_fixtures.py --check` clean; ruff clean.
-- [ ] euler-eval 3.2.0: shared protocol helpers; `DepthValidationSet`.
-- [ ] euler-eval 3.2.0: decisive test (same protocol, equal values; subset paired).
-- [ ] euler-eval 3.2.0: euler-train payload pointers; requirements.txt; docs.
-- [ ] euler-train 2.15.0: validation sets, naming checks, checkpoint selection, stream gate.
-- [ ] euler-train 2.15.0: meta-schema, docs; full suite.
+- [x] euler-eval 3.2.0: shared protocol helpers (7f9d650); `DepthValidationSet`
+      and `DepthValidationPass`, dense and sparse (abd7df5).
+- [x] euler-eval 3.2.0: decisive test, `tests/test_validation_set.py` (abd7df5):
+      `same protocol` with equal values for all 150 cells of a pass (no
+      alignment with benchmark bins), for affine alignment and for a depth
+      cap; `compared on 3 shared files` with equal recomputed values on a
+      subset; in-loop-only masking reads `not comparable`.
+- [x] euler-eval 3.2.0: euler-train payload pointers (030f14e);
+      requirements.txt synced and checked by a test; docs and changelog (5ed932f).
+      Full suite 964 passed, 3 skipped (euler-connector on PYTHONPATH).
+- [x] euler-train 2.15.0: naming checks and `naming_report`, `strict_naming`,
+      validation sets, checkpoint selection, stream capability gate,
+      meta-schema (6eb7760); docs (9719e8f). Full suite 232 passed on
+      Python 3.9 and 3.11; `check-jsonschema --check-metaschema` clean.
 - [ ] euler-metric-naming 0.4.0 released by the user (PyPI); git pins replaced.
 - [ ] euler-view (next round).
 - [ ] Model repositories (last).
 - [ ] Follow-up: sparse in-loop versus CLI parity test with an on-disk sparse GT fixture.
+- [ ] Follow-up for euler-view: group by verdicts, not definition keys. A
+      validation pass and the CLI evaluation of the same predictions read
+      `same protocol` cell by cell, but their definition keys differ (the
+      pass snapshots fewer metric definitions and records the in-loop keys
+      with their defaults).
+
+## 9. Notes from the implementation
+
+- The euler-train payload of a CLI evaluation names the results files
+  (`metadata.results_files`, by metric namespace) instead of copying the
+  protocol blocks into `meta.json`, which euler-train rewrites on every
+  logged step and which per-item series would bloat.
+- `strict_naming=True` requires a training naming 2.0 declaration and
+  euler-metric-naming 0.4; it fails before the run directory is created.
+- A run's validation sets are checked whether or not it declares training
+  naming 2.0; their problems share the run's `naming_report`.
+- Stream events for validation sets are gated on the `validation_sets/1`
+  capability of the session (section 5); the euler-view step adds it.
