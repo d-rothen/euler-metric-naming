@@ -1,6 +1,8 @@
 """euler-metric-naming — structured metric naming for the Euler ML ecosystem."""
 from __future__ import annotations
 
+from importlib.metadata import PackageNotFoundError, version
+
 from .axes import (
     AxisDeclaration,
     DecomposedMetric,
@@ -12,7 +14,11 @@ from .descriptions import MetricDescription
 from .matching import compare_stages, filter_glob, filter_kind
 from .namespace import MetricNamespace
 
-__version__ = "0.3.0"
+try:
+    __version__ = version("euler-metric-naming")
+except PackageNotFoundError:
+    # The source checkout can also be imported without installing it.
+    __version__ = "0+unknown"
 
 __all__ = [
     "AxisDeclaration",
