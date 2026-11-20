@@ -1,0 +1,406 @@
+{
+ "description": "The legacy adapter (docs/contract.md 10): normalize(protocol, metricSet, meta) of a 1.x block. expected is the normalized contract without descriptors and reducers; descriptors must be exactly the table's descriptors of descriptorKeys, reducers exactly the table's reducers.",
+ "cases": [
+  {
+   "name": "RGB: role rename, resize of the GT, policies of revision 4, unknown key passes through",
+   "protocol": {
+    "schemaVersion": "1.3",
+    "parameters": {
+     "reference.gt.modality": "rgb",
+     "reference.gt.dataset": "cerema",
+     "reference.gt.scope": "rgb",
+     "reference.gt.split": "test",
+     "reference.input_rgb.dataset": "cerema_fog",
+     "reference.input_rgb.scope": "rgb",
+     "reference.input_rgb.split": "test",
+     "reference.depth.dataset": null,
+     "reference.depth.scope": null,
+     "reference.depth.split": null,
+     "population.samples": 10,
+     "population.gt_sky_masking": false,
+     "population.missing_segmentation": null,
+     "population.evaluated_resolution": [
+      512,
+      1024
+     ],
+     "population.benchmark_depth_range_m": null,
+     "method.metrics_revision": 4,
+     "method.fid_backend": "builtin",
+     "method.spatial_alignment": "resize",
+     "method.input_alignment": "crop_input",
+     "method.future_flag": true
+    }
+   },
+   "metricSet": {
+    "metricNamespace": "rgb.eval",
+    "axes": {
+     "category": {
+      "position": 0,
+      "optional": true,
+      "values": [
+       "image_quality",
+       "edge_f1"
+      ]
+     },
+     "bin": {
+      "position": 1,
+      "optional": true,
+      "values": [
+       "all",
+       "near",
+       "mid",
+       "far"
+      ]
+     }
+    },
+    "metadata": {
+     "metric_sets": [
+      "core"
+     ]
+    }
+   },
+   "meta": {
+    "gt": {
+     "dimensions": {
+      "height": 1024,
+      "width": 2048
+     }
+    },
+    "pred": {
+     "dimensions": {
+      "height": 512,
+      "width": 1024
+     }
+    }
+   },
+   "expected": {
+    "schemaVersion": "1.3",
+    "adapter": "euler.legacy.protocol-1@1.0",
+    "task": null,
+    "vocabularies": {},
+    "parameters": {
+     "sky.gt.masking": false,
+     "sky.gt.missing_policy": null,
+     "spatial.method": "resize",
+     "rgb.fid.backend": "builtin",
+     "rgb.input.alignment": "crop_input",
+     "depth.benchmark.range_m": null,
+     "spatial.resize_target": "gt_grid",
+     "spatial.mask_resample": "nearest_exact",
+     "rgb.depth_bins.policy": "v2",
+     "rays.fov_policy": "v2",
+     "depth.invalid.policy": "exclude_sentinel",
+     "rgb.input.alignment_policy": "follow_gt",
+     "spatial.gt_resample": [
+      0.5,
+      0.5
+     ],
+     "method.future_flag": true
+    },
+    "references": {
+     "gt": {
+      "modality": "rgb",
+      "dataset": {
+       "id": "cerema",
+       "scope": "rgb",
+       "split": "test"
+      },
+      "identity": "sha256:967cfe0416e022c6dcc586cd546bb007557ff93a4b7564c4e7449f2ae54cc11e"
+     },
+     "input": {
+      "dataset": {
+       "id": "cerema_fog",
+       "scope": "rgb",
+       "split": "test"
+      },
+      "identity": "sha256:50293faecf200a8eb74bc63252dd8467a94d302b4ef3b1a538a4b3adab3b224e"
+     }
+    },
+    "observations": {
+     "domain.grid": [
+      512,
+      1024
+     ]
+    },
+    "population": {
+     "count": 10
+    },
+    "stratifications": {},
+    "axes": {
+     "category": {
+      "role": "family"
+     },
+     "bin": {
+      "role": "stratum",
+      "stratification": "depth.gt_range"
+     }
+    },
+    "metrics": {},
+    "items": {},
+    "metricSet": {
+     "metricNamespace": "rgb.eval",
+     "axes": {
+      "category": {
+       "position": 0,
+       "optional": true,
+       "values": [
+        "image_quality",
+        "edge_f1"
+       ]
+      },
+      "bin": {
+       "position": 1,
+       "optional": true,
+       "values": [
+        "all",
+        "near",
+        "mid",
+        "far"
+       ]
+      }
+     }
+    }
+   },
+   "descriptorKeys": [
+    "depth.benchmark.range_m",
+    "depth.invalid.policy",
+    "domain.grid",
+    "rays.fov_policy",
+    "reference.gt",
+    "reference.input",
+    "rgb.depth_bins.policy",
+    "rgb.fid.backend",
+    "rgb.input.alignment",
+    "rgb.input.alignment_policy",
+    "sky.gt.masking",
+    "sky.gt.missing_policy",
+    "spatial.gt_resample",
+    "spatial.mask_resample",
+    "spatial.method",
+    "spatial.resize_target"
+   ]
+  },
+  {
+   "name": "points3d: applied from metadata, revision beyond the table, missing prediction dimensions",
+   "protocol": {
+    "schemaVersion": "1.1",
+    "parameters": {
+     "reference.gt.modality": "points_3d",
+     "reference.gt.dataset": "scannet",
+     "reference.gt.scope": "points_3d",
+     "reference.gt.split": null,
+     "reference.intrinsics.dataset": "scannet",
+     "reference.intrinsics.scope": "intrinsics",
+     "reference.intrinsics.split": null,
+     "population.samples": 3,
+     "method.metrics_revision": 5,
+     "method.points_3d_alignment": "auto",
+     "method.spatial_alignment": "resize_prediction"
+    }
+   },
+   "metricSet": {
+    "metricNamespace": "points3d.eval",
+    "metadata": {
+     "calibration_applied": true
+    }
+   },
+   "meta": {
+    "gt": {
+     "dimensions": {
+      "height": 480,
+      "width": 640
+     }
+    }
+   },
+   "expected": {
+    "schemaVersion": "1.1",
+    "adapter": "euler.legacy.protocol-1@1.0",
+    "task": null,
+    "vocabularies": {},
+    "parameters": {
+     "points3d.alignment.mode": "auto",
+     "spatial.method": "resize_prediction",
+     "points3d.alignment.applied": true,
+     "spatial.resize_target": "gt_grid",
+     "spatial.mask_resample": "nearest_exact",
+     "rgb.depth_bins.policy": "v2",
+     "rays.fov_policy": "v2",
+     "depth.invalid.policy": "exclude_sentinel",
+     "rgb.input.alignment_policy": "follow_gt",
+     "legacy.metrics_revision": 5
+    },
+    "references": {
+     "gt": {
+      "modality": "points_3d",
+      "dataset": {
+       "id": "scannet",
+       "scope": "points_3d",
+       "split": null
+      },
+      "identity": "sha256:7a05f8bd2e458ab8984d844a30eb87e753c7f3c19884eaab0e5fa2ae2e9ab4d7"
+     },
+     "intrinsics": {
+      "dataset": {
+       "id": "scannet",
+       "scope": "intrinsics",
+       "split": null
+      },
+      "identity": "sha256:8853b2465f1aa76a486f3441ff496b4c484a569782131bebfaafc6d4809fea93"
+     }
+    },
+    "observations": {
+     "prediction.resample": null
+    },
+    "population": {
+     "count": 3
+    },
+    "stratifications": {},
+    "axes": {},
+    "metrics": {},
+    "items": {},
+    "metricSet": {
+     "metricNamespace": "points3d.eval",
+     "axes": {}
+    }
+   },
+   "descriptorKeys": [
+    "depth.invalid.policy",
+    "legacy.metrics_revision",
+    "points3d.alignment.applied",
+    "points3d.alignment.mode",
+    "prediction.resample",
+    "rays.fov_policy",
+    "reference.gt",
+    "reference.intrinsics",
+    "rgb.depth_bins.policy",
+    "rgb.input.alignment_policy",
+    "spatial.mask_resample",
+    "spatial.method",
+    "spatial.resize_target"
+   ]
+  },
+  {
+   "name": "depth: benchmark edges recomputed (boundaries of another range), non-integer revision",
+   "protocol": {
+    "schemaVersion": "1.3",
+    "parameters": {
+     "population.benchmark_depth_range_m": [
+      0.01,
+      80.0
+     ],
+     "method.metrics_revision": "x",
+     "reference.gt.modality": "depth",
+     "reference.gt.dataset": null,
+     "reference.gt.scope": null,
+     "reference.gt.split": null
+    }
+   },
+   "metricSet": {
+    "metricNamespace": "depth.eval",
+    "axes": {
+     "bin": {
+      "position": 0,
+      "optional": true,
+      "values": [
+       "all",
+       "near",
+       "mid",
+       "far"
+      ]
+     }
+    },
+    "metadata": {
+     "benchmark": {
+      "boundaries": {
+       "range": [
+        0.01,
+        100.0
+       ],
+       "near": [
+        0.01,
+        11.56
+       ],
+       "mid": [
+        11.56,
+        44.89
+       ],
+       "far": [
+        44.89,
+        100.0
+       ]
+      }
+     }
+    }
+   },
+   "meta": null,
+   "expected": {
+    "schemaVersion": "1.3",
+    "adapter": "euler.legacy.protocol-1@1.0",
+    "task": null,
+    "vocabularies": {},
+    "parameters": {
+     "depth.benchmark.range_m": [
+      0.01,
+      80.0
+     ],
+     "legacy.metrics_revision": "x"
+    },
+    "references": {},
+    "observations": {},
+    "population": {},
+    "stratifications": {
+     "depth.gt_range": {
+      "label": "GT depth",
+      "variable": "gt_depth_m",
+      "unit": "m",
+      "edges": [
+       0.01,
+       9.290856529333297,
+       35.95418986266663,
+       80.0
+      ],
+      "labels": [
+       "near",
+       "mid",
+       "far"
+      ],
+      "closed": "left",
+      "lastClosed": true,
+      "total": "all",
+      "after": [
+       "depth.cap.max_m"
+      ],
+      "scheme": "sqrt_equal_width"
+     }
+    },
+    "axes": {
+     "bin": {
+      "role": "stratum",
+      "stratification": "depth.gt_range"
+     }
+    },
+    "metrics": {},
+    "items": {},
+    "metricSet": {
+     "metricNamespace": "depth.eval",
+     "axes": {
+      "bin": {
+       "position": 0,
+       "optional": true,
+       "values": [
+        "all",
+        "near",
+        "mid",
+        "far"
+       ]
+      }
+     }
+    }
+   },
+   "descriptorKeys": [
+    "depth.benchmark.range_m",
+    "legacy.metrics_revision"
+   ]
+  }
+ ]
+}

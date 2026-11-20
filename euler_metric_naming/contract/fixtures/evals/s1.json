@@ -1,0 +1,366 @@
+{
+ "metricSet": {
+  "metricNamespace": "audio.eval",
+  "producerKey": "lab-audio-eval",
+  "producerVersion": "0.1.0",
+  "sourceKind": "computed",
+  "metadata": {},
+  "axes": {
+   "reduction": {
+    "position": 0,
+    "optional": true,
+    "values": [
+     "clip_mean",
+     "word_pool"
+    ],
+    "description": "Reduction over utterances"
+   },
+   "band": {
+    "position": 1,
+    "optional": true,
+    "values": [
+     "all",
+     "low",
+     "mid",
+     "high"
+    ],
+    "description": "Input SNR band"
+   }
+  },
+  "metricDescriptions": {
+   "sisdr": {
+    "isHigherBetter": true,
+    "unit": "dB",
+    "displayName": "SI-SDR"
+   },
+   "wer": {
+    "isHigherBetter": false,
+    "min": 0.0,
+    "displayName": "WER"
+   }
+  }
+ },
+ "protocol": {
+  "schemaVersion": "2.0",
+  "task": "audio.separation",
+  "vocabularies": {
+   "lab.audio": "0.1"
+  },
+  "parameters": {
+   "audio.sample_rate_hz": 16000,
+   "audio.mode": "separate",
+   "audio.denoise": "none"
+  },
+  "descriptors": {
+   "reference.gt": {
+    "label": "GT",
+    "role": "reference",
+    "vocabulary": "lab.audio@0.1"
+   },
+   "audio.sample_rate_hz": {
+    "label": "sample rate",
+    "role": "definition",
+    "unit": "Hz",
+    "vocabulary": "lab.audio@0.1"
+   },
+   "audio.mode": {
+    "label": "mode",
+    "role": "definition",
+    "vocabulary": "lab.audio@0.1"
+   },
+   "audio.denoise": {
+    "label": "denoising",
+    "role": "definition",
+    "appliesWhen": {
+     "param": "audio.mode",
+     "op": "eq",
+     "value": "enhance"
+    },
+    "vocabulary": "lab.audio@0.1"
+   },
+   "audio.truncated_s": {
+    "label": "truncated audio",
+    "role": "domain",
+    "observe": "count",
+    "unit": "s",
+    "vocabulary": "lab.audio@0.1"
+   }
+  },
+  "references": {
+   "gt": {
+    "modality": "audio",
+    "dataset": {
+     "id": "libri2mix",
+     "variant": "clean",
+     "split": "test",
+     "scope": "mix"
+    },
+    "identity": "sha256:16738421e66305e11694f673b076451c288cfcf6bbb57f2961620e1a922f87d8"
+   }
+  },
+  "observations": {
+   "audio.truncated_s": 12.0
+  },
+  "population": {
+   "unit": "utterance",
+   "idScheme": "euler.item_id/1",
+   "count": 6,
+   "manifest": "sha256:d8f6ea870288b838f4802e20c57b8059d181cff133a5e56667b4437740ebaecf"
+  },
+  "stratifications": {
+   "audio.snr_band": {
+    "label": "input SNR",
+    "variable": "input_snr_db",
+    "unit": "dB",
+    "edges": [
+     0,
+     10,
+     20,
+     40
+    ],
+    "labels": [
+     "low",
+     "mid",
+     "high"
+    ],
+    "closed": "left",
+    "lastClosed": true,
+    "total": "all"
+   }
+  },
+  "reducers": {
+   "clip_mean": {
+    "recompute": "mean",
+    "over": "item",
+    "label": "clip mean",
+    "vocabulary": "lab.audio@0.1"
+   },
+   "word_pool": {
+    "recompute": "pool",
+    "over": "observation",
+    "label": "word pool",
+    "vocabulary": "lab.audio@0.1"
+   }
+  },
+  "axes": {
+   "reduction": {
+    "role": "reduction"
+   },
+   "band": {
+    "role": "stratum",
+    "stratification": "audio.snr_band"
+   }
+  },
+  "metrics": {
+   "sisdr": {
+    "id": "audio.sisdr",
+    "kind": "score",
+    "rev": 1,
+    "displayName": "SI-SDR",
+    "direction": "higher",
+    "bounds": [
+     null,
+     null
+    ],
+    "unit": "dB",
+    "display": {
+     "scale": "absolute",
+     "fullAt": 1,
+     "unit": "dB"
+    },
+    "perItem": true,
+    "pool": {
+     "form": "none"
+    },
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "lab.audio@0.1"
+   },
+   "wer": {
+    "id": "audio.wer",
+    "kind": "score",
+    "rev": 1,
+    "displayName": "WER",
+    "direction": "lower",
+    "bounds": [
+     0,
+     null
+    ],
+    "unit": null,
+    "display": {
+     "scale": "relative"
+    },
+    "perItem": true,
+    "pool": {
+     "form": "mean",
+     "weight": "words"
+    },
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "lab.audio@0.1"
+   },
+   "words": {
+    "id": "audio.words",
+    "kind": "statistic",
+    "rev": 1,
+    "displayName": "words",
+    "direction": "none",
+    "bounds": [
+     0,
+     null
+    ],
+    "unit": null,
+    "display": {
+     "scale": "none"
+    },
+    "perItem": true,
+    "pool": {
+     "form": "none"
+    },
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "lab.audio@0.1"
+   }
+  },
+  "items": {
+   "ids": [
+    "spk1~utt-0",
+    "spk1~utt-1",
+    "spk1~utt-2",
+    "spk2~utt-0",
+    "spk2~utt-1",
+    "spk2~utt-2"
+   ],
+   "series": {
+    "audio.eval.words": [
+     20,
+     25,
+     30,
+     35,
+     40,
+     45
+    ],
+    "audio.eval.low.words": [
+     20,
+     null,
+     null,
+     35,
+     null,
+     null
+    ]
+   }
+  }
+ },
+ "dataset_info": {
+  "num_pairs": 6
+ },
+ "meta": {
+  "version": "0.1.0",
+  "modality": "audio"
+ },
+ "audio": {
+  "eval": {
+   "clip_mean": {
+    "sisdr": 12.5,
+    "low": {
+     "sisdr": 11.5
+    }
+   },
+   "word_pool": {
+    "wer": 0.158974,
+    "low": {
+     "wer": 0.138182
+    }
+   }
+  }
+ },
+ "per_file_metrics": {
+  "children": {
+   "spk1": {
+    "files": [
+     {
+      "id": "utt-0",
+      "metrics": {
+       "audio": {
+        "eval": {
+         "sisdr": 10.0,
+         "wer": 0.1,
+         "low": {
+          "sisdr": 10.0,
+          "wer": 0.1
+         }
+        }
+       }
+      }
+     },
+     {
+      "id": "utt-1",
+      "metrics": {
+       "audio": {
+        "eval": {
+         "sisdr": 11.0,
+         "wer": 0.12
+        }
+       }
+      }
+     },
+     {
+      "id": "utt-2",
+      "metrics": {
+       "audio": {
+        "eval": {
+         "sisdr": 12.0,
+         "wer": 0.14
+        }
+       }
+      }
+     }
+    ]
+   },
+   "spk2": {
+    "files": [
+     {
+      "id": "utt-0",
+      "metrics": {
+       "audio": {
+        "eval": {
+         "sisdr": 13.0,
+         "wer": 0.16,
+         "low": {
+          "sisdr": 13.0,
+          "wer": 0.16
+         }
+        }
+       }
+      }
+     },
+     {
+      "id": "utt-1",
+      "metrics": {
+       "audio": {
+        "eval": {
+         "sisdr": 14.0,
+         "wer": 0.18
+        }
+       }
+      }
+     },
+     {
+      "id": "utt-2",
+      "metrics": {
+       "audio": {
+        "eval": {
+         "sisdr": 15.0,
+         "wer": 0.2
+        }
+       }
+      }
+     }
+    ]
+   }
+  }
+ }
+}

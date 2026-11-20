@@ -1,0 +1,873 @@
+{
+ "metricSet": {
+  "metricNamespace": "depth.eval",
+  "producerKey": "euler-eval",
+  "producerVersion": "3.0.0",
+  "sourceKind": "computed",
+  "metadata": {
+   "calibration_applied": false,
+   "canonical_space": "metric",
+   "emitted_spaces": [
+    "native",
+    "metric"
+   ]
+  },
+  "axes": {
+   "space": {
+    "position": 0,
+    "optional": false,
+    "values": [
+     "native",
+     "metric"
+    ],
+    "description": "Depth space semantics"
+   },
+   "category": {
+    "position": 1,
+    "optional": true,
+    "values": [
+     "image_quality",
+     "standard",
+     "depth_metrics"
+    ],
+    "description": "Metric category"
+   },
+   "reduction": {
+    "position": 2,
+    "optional": true,
+    "values": [
+     "image_mean",
+     "image_median",
+     "pixel_pool"
+    ],
+    "description": "Dataset reduction mode"
+   },
+   "bin": {
+    "position": 3,
+    "optional": true,
+    "values": [
+     "all",
+     "near",
+     "mid",
+     "far"
+    ],
+    "description": "Depth benchmark bin"
+   }
+  },
+  "metricDescriptions": {
+   "absrel": {
+    "isHigherBetter": false,
+    "displayName": "AbsRel"
+   },
+   "rmse": {
+    "isHigherBetter": false,
+    "unit": "meters",
+    "displayName": "RMSE"
+   },
+   "delta1": {
+    "isHigherBetter": true,
+    "min": 0.0,
+    "max": 1.0,
+    "displayName": "δ < 1.25"
+   },
+   "fid": {
+    "isHigherBetter": false,
+    "displayName": "FID"
+   }
+  }
+ },
+ "protocol": {
+  "schemaVersion": "2.0",
+  "task": "depth.dense",
+  "vocabularies": {
+   "euler.core": "1.0",
+   "euler.depth": "1.0",
+   "euler.sky": "1.0"
+  },
+  "parameters": {
+   "depth.alignment.mode": "auto_affine",
+   "depth.alignment.applied": false,
+   "depth.alignment.fit": "scale_shift",
+   "depth.alignment.fit_trim": 0.0,
+   "depth.input_space": "metric",
+   "depth.cap.max_m": 38,
+   "depth.benchmark.range_m": [
+    0.01,
+    32
+   ],
+   "depth.invalid.policy": "exclude_sentinel",
+   "depth.conversion": "none",
+   "sky.gt.masking": false,
+   "sky.pred.masking": false,
+   "sky.pred.fill": false,
+   "spatial.method": "none",
+   "spatial.policy": "auto",
+   "spatial.resize_target": "gt_grid",
+   "spatial.mask_resample": "nearest_exact",
+   "depth.quantization.bits": 16,
+   "depth.quantization.mode": "linear"
+  },
+  "descriptors": {
+   "reference.gt": {
+    "label": "GT",
+    "role": "reference",
+    "description": "The ground truth the prediction is scored against.",
+    "vocabulary": "euler.core@1.0"
+   },
+   "depth.alignment.mode": {
+    "label": "depth alignment mode",
+    "role": "provenance",
+    "description": "Configured alignment mode (none, auto_affine, affine); whether a fit ran is depth.alignment.applied.",
+    "vocabulary": "euler.depth@1.0"
+   },
+   "depth.alignment.applied": {
+    "label": "depth alignment applied",
+    "role": "definition",
+    "affects": {
+     "axes": {
+      "space": [
+       "metric"
+      ]
+     }
+    },
+    "hint": "compare the native space, or two fitted runs",
+    "description": "Whether a scale/shift fit to the GT produced the metric space.",
+    "vocabulary": "euler.depth@1.0"
+   },
+   "depth.alignment.fit": {
+    "label": "depth alignment fit",
+    "role": "definition",
+    "appliesWhen": {
+     "param": "depth.alignment.applied",
+     "op": "eq",
+     "value": true
+    },
+    "affects": {
+     "axes": {
+      "space": [
+       "metric"
+      ]
+     }
+    },
+    "description": "The fitted model (e.g. scale, scale_shift, scale_shift_inverse).",
+    "vocabulary": "euler.depth@1.0"
+   },
+   "depth.alignment.fit_trim": {
+    "label": "depth alignment trim",
+    "role": "definition",
+    "appliesWhen": {
+     "param": "depth.alignment.applied",
+     "op": "eq",
+     "value": true
+    },
+    "affects": {
+     "axes": {
+      "space": [
+       "metric"
+      ]
+     }
+    },
+    "description": "Fraction of largest residuals excluded from the fit.",
+    "vocabulary": "euler.depth@1.0"
+   },
+   "depth.input_space": {
+    "label": "input depth space",
+    "role": "provenance",
+    "description": "Detected space of the prediction (metric, relative, affine).",
+    "vocabulary": "euler.depth@1.0"
+   },
+   "depth.cap.max_m": {
+    "label": "depth cap",
+    "role": "definition",
+    "unit": "m",
+    "inertIf": {
+     "observation": "depth.cap.clipped",
+     "op": "eq",
+     "value": 0
+    },
+    "description": "Predictions (and filled predicted sky) are clipped at this depth; inert when nothing was clipped.",
+    "vocabulary": "euler.depth@1.0"
+   },
+   "depth.benchmark.range_m": {
+    "label": "benchmark depth range",
+    "role": "derived",
+    "unit": "m",
+    "derivedFrom": [],
+    "description": "[min, max] GT depth of the benchmark bins; compared through the stratification it defines.",
+    "vocabulary": "euler.depth@1.0"
+   },
+   "depth.invalid.policy": {
+    "label": "invalid-value policy",
+    "role": "definition",
+    "description": "How declared invalid sentinels are treated: exclude_sentinel (not scored) or score_sentinel.",
+    "vocabulary": "euler.depth@1.0"
+   },
+   "depth.conversion": {
+    "label": "depth conversion",
+    "role": "definition",
+    "description": "Conversion applied before scoring (none, radial_to_planar, planar_to_radial).",
+    "vocabulary": "euler.depth@1.0"
+   },
+   "sky.gt.masking": {
+    "label": "GT sky masking",
+    "role": "definition",
+    "description": "Pixels labelled sky in the GT segmentation are left out of every metric (--mask-sky).",
+    "vocabulary": "euler.sky@1.0"
+   },
+   "sky.pred.masking": {
+    "label": "predicted-sky masking",
+    "role": "definition",
+    "description": "Pixels in the prediction's own sky mask are left out of every metric (--mask-sky-prediction).",
+    "vocabulary": "euler.sky@1.0"
+   },
+   "sky.pred.fill": {
+    "label": "predicted-sky fill",
+    "role": "definition",
+    "appliesWhen": {
+     "any": [
+      {
+       "param": "depth.cap.max_m",
+       "op": "exists"
+      },
+      {
+       "param": "sky.pred.masking",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    },
+    "description": "Whether the prediction's sky mask was loaded and used (filled at the depth cap, or excluded under predicted-sky masking).",
+    "vocabulary": "euler.sky@1.0"
+   },
+   "spatial.method": {
+    "label": "spatial alignment",
+    "role": "derived",
+    "derivedFrom": [
+     "prediction.resample",
+     "spatial.gt_resample",
+     "domain.region",
+     "domain.grid"
+    ],
+    "description": "How prediction and GT resolutions were reconciled (none, crop, vae_crop, resize_prediction, resize, warp_prediction, warp, pointcloud_projection). Compared through the keys it is derived from.",
+    "vocabulary": "euler.core@1.0"
+   },
+   "spatial.policy": {
+    "label": "spatial alignment policy",
+    "role": "provenance",
+    "description": "The configured policy that chose the spatial method (e.g. auto, crop, resize, source_grid).",
+    "vocabulary": "euler.core@1.0"
+   },
+   "spatial.resize_target": {
+    "label": "resize target",
+    "role": "definition",
+    "appliesWhen": {
+     "param": "spatial.method",
+     "op": "in",
+     "value": [
+      "resize_prediction",
+      "warp_prediction",
+      "resize",
+      "warp"
+     ]
+    },
+    "description": "Which grid is resampled when resolutions differ and the prediction is not a crop: gt_grid (prediction onto GT) or prediction_grid (GT onto prediction).",
+    "vocabulary": "euler.core@1.0"
+   },
+   "spatial.mask_resample": {
+    "label": "mask resampling",
+    "role": "definition",
+    "appliesWhen": {
+     "any": [
+      {
+       "param": "sky.gt.masking",
+       "op": "eq",
+       "value": true
+      },
+      {
+       "param": "sky.pred.masking",
+       "op": "eq",
+       "value": true
+      },
+      {
+       "param": "sky.pred.fill",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    },
+    "description": "Interpolation used to resample masks (nearest, nearest_exact).",
+    "vocabulary": "euler.core@1.0"
+   },
+   "domain.region": {
+    "label": "domain",
+    "role": "domain",
+    "compare": "measure",
+    "observe": "region",
+    "unit": "px",
+    "description": "The region of the source frame that was scored, as {frame, box: [top, left, height, width]} in source pixels.",
+    "vocabulary": "euler.core@1.0"
+   },
+   "prediction.resample": {
+    "label": "prediction resampled",
+    "role": "domain",
+    "compare": "measure",
+    "observe": "factor",
+    "default": [
+     1,
+     1
+    ],
+    "description": "Factor [height, width] by which the prediction was resampled onto the evaluated grid (target / source); [1, 1] when it was not.",
+    "vocabulary": "euler.core@1.0"
+   },
+   "depth.cap.clipped": {
+    "label": "clipped by depth cap",
+    "role": "provenance",
+    "observe": "fraction",
+    "description": "Fraction of scored pixels whose prediction the depth cap changed.",
+    "vocabulary": "euler.depth@1.0"
+   },
+   "depth.quantization.bits": {
+    "label": "quantization bits",
+    "role": "tuning",
+    "vocabulary": "lab.depth@0.1"
+   },
+   "depth.quantization.mode": {
+    "label": "quantization mode",
+    "role": "tuning",
+    "compare": "ignore",
+    "vocabulary": "lab.depth@0.1"
+   }
+  },
+  "references": {
+   "gt": {
+    "modality": "depth",
+    "dataset": {
+     "id": "cerema",
+     "variant": "cropped",
+     "split": null,
+     "scope": "depth"
+    },
+    "identity": "sha256:4b0380e70a01be9e59b1e8dd5e2b678affe0c76b561ea43dbb53ead40be51530",
+    "manifest": {
+     "hash": "sha256:b268088d486e5b78c74914de5a05441d867f48338030f33267b272776c78aef3",
+     "count": 1600
+    },
+    "view": {
+     "source": "cerema/rgb_left@1024x1920",
+     "region": [
+      270,
+      170,
+      734,
+      1730
+     ]
+    }
+   }
+  },
+  "observations": {
+   "domain.region": {
+    "frame": "cerema/rgb_left@1024x1920",
+    "box": [
+     270,
+     170,
+     734,
+     1730
+    ]
+   },
+   "prediction.resample": [
+    1,
+    1
+   ],
+   "depth.cap.clipped": 0.0123
+  },
+  "population": {
+   "unit": "image",
+   "idScheme": "euler.item_id/1",
+   "count": 6,
+   "manifest": "sha256:69922bd7d767754c6b13b5d0a50ceec683aef4c8d028814b95d8daa828c915b2",
+   "accounting": {
+    "reference": 1600,
+    "prediction": 6,
+    "paired": 6
+   }
+  },
+  "stratifications": {
+   "depth.gt_range": {
+    "label": "GT depth",
+    "variable": "gt_depth_m",
+    "unit": "m",
+    "edges": [
+     0.01,
+     3.8114157444218852,
+     14.474749077755222,
+     32.0
+    ],
+    "labels": [
+     "near",
+     "mid",
+     "far"
+    ],
+    "closed": "left",
+    "lastClosed": true,
+    "total": "all",
+    "scheme": "sqrt_equal_width",
+    "after": [
+     "depth.cap.max_m"
+    ]
+   }
+  },
+  "reducers": {
+   "image_mean": {
+    "recompute": "mean",
+    "over": "item",
+    "label": "image mean",
+    "description": "Arithmetic mean of the per-image values.",
+    "vocabulary": "euler.core@1.0"
+   },
+   "image_median": {
+    "recompute": "median",
+    "over": "item",
+    "label": "image median",
+    "description": "Median of the per-image values.",
+    "vocabulary": "euler.core@1.0"
+   },
+   "pixel_pool": {
+    "recompute": "pool",
+    "over": "observation",
+    "label": "pixel pool",
+    "description": "Every valid pixel of every image pooled into one population; recomputed from per-image values with the metric's pool form and weight.",
+    "vocabulary": "euler.core@1.0"
+   }
+  },
+  "axes": {
+   "space": {
+    "role": "space"
+   },
+   "category": {
+    "role": "family"
+   },
+   "reduction": {
+    "role": "reduction"
+   },
+   "bin": {
+    "role": "stratum",
+    "stratification": "depth.gt_range"
+   }
+  },
+  "metrics": {
+   "fid": {
+    "id": "depth.fid",
+    "kind": "score",
+    "rev": 1,
+    "displayName": "FID",
+    "description": "Fréchet Inception Distance of the depth-map distributions; dataset-level.",
+    "direction": "lower",
+    "bounds": [
+     0,
+     null
+    ],
+    "unit": null,
+    "display": {
+     "scale": "relative"
+    },
+    "perItem": false,
+    "pool": {
+     "form": "none"
+    },
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "euler.depth@1.0"
+   },
+   "absrel": {
+    "id": "depth.absrel",
+    "kind": "score",
+    "rev": 1,
+    "displayName": "AbsRel",
+    "description": "Mean absolute relative error |d - d*| / d* over valid pixels.",
+    "direction": "lower",
+    "bounds": [
+     0,
+     null
+    ],
+    "unit": null,
+    "display": {
+     "scale": "relative"
+    },
+    "perItem": true,
+    "pool": {
+     "form": "mean",
+     "weight": "count"
+    },
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "euler.depth@1.0"
+   },
+   "rmse": {
+    "id": "depth.rmse",
+    "kind": "score",
+    "rev": 1,
+    "displayName": "RMSE",
+    "description": "Root mean squared error in meters.",
+    "direction": "lower",
+    "bounds": [
+     0,
+     null
+    ],
+    "unit": "m",
+    "display": {
+     "scale": "relative"
+    },
+    "perItem": true,
+    "pool": {
+     "form": "rms",
+     "weight": "count"
+    },
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "euler.depth@1.0"
+   },
+   "delta1": {
+    "id": "depth.delta1",
+    "kind": "score",
+    "rev": 1,
+    "displayName": "δ < 1.25",
+    "description": "Fraction of pixels with max(d/d*, d*/d) < 1.25.",
+    "direction": "higher",
+    "bounds": [
+     0,
+     1
+    ],
+    "unit": null,
+    "display": {
+     "scale": "complement"
+    },
+    "perItem": true,
+    "pool": {
+     "form": "mean",
+     "weight": "count"
+    },
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "euler.depth@1.0"
+   },
+   "count": {
+    "id": "depth.count",
+    "kind": "statistic",
+    "rev": 1,
+    "displayName": "valid pixels",
+    "description": "Valid pixels scored per image; the weight of pooled standard metrics.",
+    "direction": "none",
+    "bounds": [
+     0,
+     null
+    ],
+    "unit": "px",
+    "display": {
+     "scale": "none"
+    },
+    "perItem": true,
+    "pool": {
+     "form": "none"
+    },
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "euler.depth@1.0"
+   }
+  },
+  "items": {
+   "ids": [
+    "day-0",
+    "day-1",
+    "day-2",
+    "day-3",
+    "day-4",
+    "day-5"
+   ],
+   "series": {
+    "depth.eval.native.standard.count": [
+     1000,
+     1100,
+     1200,
+     1300,
+     1400,
+     1500
+    ],
+    "depth.eval.native.standard.near.count": [
+     300,
+     310,
+     320,
+     330,
+     340,
+     350
+    ],
+    "depth.eval.metric.standard.count": [
+     1000,
+     1100,
+     1200,
+     1300,
+     1400,
+     1500
+    ],
+    "depth.eval.metric.standard.near.count": [
+     300,
+     310,
+     320,
+     330,
+     340,
+     350
+    ]
+   }
+  }
+ },
+ "dataset_info": {
+  "num_pairs": 6,
+  "gt_name": "GT",
+  "pred_name": "fixture"
+ },
+ "meta": {
+  "version": "3.0.0",
+  "modality": "depth"
+ },
+ "depth": {
+  "eval": {
+   "native": {
+    "image_quality": {
+     "fid": 21.5
+    },
+    "standard": {
+     "image_mean": {
+      "absrel": 0.145,
+      "rmse": 2.45,
+      "delta1": 0.855,
+      "near": {
+       "absrel": 0.0825
+      }
+     },
+     "image_median": {
+      "absrel": 0.145,
+      "rmse": 2.45,
+      "delta1": 0.855
+     },
+     "pixel_pool": {
+      "absrel": 0.147333,
+      "rmse": 2.479113,
+      "delta1": 0.852667,
+      "near": {
+       "absrel": 0.082949
+      }
+     }
+    }
+   },
+   "metric": {
+    "image_quality": {
+     "fid": 21.5
+    },
+    "standard": {
+     "image_mean": {
+      "absrel": 0.125,
+      "rmse": 2.25,
+      "delta1": 0.875,
+      "near": {
+       "absrel": 0.0625
+      }
+     },
+     "image_median": {
+      "absrel": 0.125,
+      "rmse": 2.25,
+      "delta1": 0.875
+     },
+     "pixel_pool": {
+      "absrel": 0.127333,
+      "rmse": 2.27962,
+      "delta1": 0.872667,
+      "near": {
+       "absrel": 0.062949
+      }
+     }
+    }
+   }
+  }
+ },
+ "per_file_metrics": {
+  "files": [
+   {
+    "id": "day-0",
+    "metrics": {
+     "depth": {
+      "eval": {
+       "native": {
+        "standard": {
+         "absrel": 0.12,
+         "rmse": 2.2,
+         "delta1": 0.88,
+         "near": {
+          "absrel": 0.07
+         }
+        }
+       },
+       "metric": {
+        "standard": {
+         "absrel": 0.1,
+         "rmse": 2.0,
+         "delta1": 0.9,
+         "near": {
+          "absrel": 0.05
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   {
+    "id": "day-1",
+    "metrics": {
+     "depth": {
+      "eval": {
+       "native": {
+        "standard": {
+         "absrel": 0.13,
+         "rmse": 2.3,
+         "delta1": 0.87,
+         "near": {
+          "absrel": 0.075
+         }
+        }
+       },
+       "metric": {
+        "standard": {
+         "absrel": 0.11,
+         "rmse": 2.1,
+         "delta1": 0.89,
+         "near": {
+          "absrel": 0.055
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   {
+    "id": "day-2",
+    "metrics": {
+     "depth": {
+      "eval": {
+       "native": {
+        "standard": {
+         "absrel": 0.14,
+         "rmse": 2.4,
+         "delta1": 0.86,
+         "near": {
+          "absrel": 0.08
+         }
+        }
+       },
+       "metric": {
+        "standard": {
+         "absrel": 0.12,
+         "rmse": 2.2,
+         "delta1": 0.88,
+         "near": {
+          "absrel": 0.06
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   {
+    "id": "day-3",
+    "metrics": {
+     "depth": {
+      "eval": {
+       "native": {
+        "standard": {
+         "absrel": 0.15,
+         "rmse": 2.5,
+         "delta1": 0.85,
+         "near": {
+          "absrel": 0.085
+         }
+        }
+       },
+       "metric": {
+        "standard": {
+         "absrel": 0.13,
+         "rmse": 2.3,
+         "delta1": 0.87,
+         "near": {
+          "absrel": 0.065
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   {
+    "id": "day-4",
+    "metrics": {
+     "depth": {
+      "eval": {
+       "native": {
+        "standard": {
+         "absrel": 0.16,
+         "rmse": 2.6,
+         "delta1": 0.84,
+         "near": {
+          "absrel": 0.09
+         }
+        }
+       },
+       "metric": {
+        "standard": {
+         "absrel": 0.14,
+         "rmse": 2.4,
+         "delta1": 0.86,
+         "near": {
+          "absrel": 0.07
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   {
+    "id": "day-5",
+    "metrics": {
+     "depth": {
+      "eval": {
+       "native": {
+        "standard": {
+         "absrel": 0.17,
+         "rmse": 2.7,
+         "delta1": 0.83,
+         "near": {
+          "absrel": 0.095
+         }
+        }
+       },
+       "metric": {
+        "standard": {
+         "absrel": 0.15,
+         "rmse": 2.5,
+         "delta1": 0.85,
+         "near": {
+          "absrel": 0.075
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  ]
+ }
+}

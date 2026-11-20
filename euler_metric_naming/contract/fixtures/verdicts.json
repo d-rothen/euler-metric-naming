@@ -1,0 +1,309 @@
+{
+  "description": "Expected verdicts (docs/contract.md section 8) for pairs of files in evals/. Derived by hand from the spec. Item sets and per-item names come from the files (evalfile / fileEvidence). codes are the reason codes in order; measures are the reasons that carry a measure, in order, d rounded to 6 decimals (compare with |delta| <= 5e-7); hint is the first reason's hint; recompute is the aggregate recomputed on the shared items of each side (|delta| <= 1e-9).",
+  "cases": [
+    {
+      "name": "identical protocol",
+      "a": "d1.json", "b": "d1.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "same", "label": "same protocol", "codes": [], "shared": null
+    },
+    {
+      "name": "MARI crops to a multiple of 8: the scored domain shrinks",
+      "a": "d1.json", "b": "d2.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "comparable", "label": "comparable · domain differs by 0.9 %",
+      "codes": ["domain"], "shared": null,
+      "measures": [{"key": "domain.region", "kind": "region", "d": 0.009321}]
+    },
+    {
+      "name": "another crop of the same source frame: GT region and domain",
+      "a": "d1.json", "b": "d3.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "comparable", "label": "comparable · GT region differs by 3.7 %",
+      "codes": ["domain", "domain"], "shared": null,
+      "measures": [
+        {"key": "reference.gt", "kind": "region", "d": 0.036785},
+        {"key": "domain.region", "kind": "region", "d": 0.036785}
+      ]
+    },
+    {
+      "name": "day vs night: per-file-backed metric",
+      "a": "d1.json", "b": "d4.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "incomparable", "label": "not comparable · no shared files",
+      "codes": ["population_disjoint"], "shared": 0
+    },
+    {
+      "name": "day vs night: dataset-level metric",
+      "a": "d1.json", "b": "d4.json",
+      "metric": "depth.eval.metric.image_quality.fid",
+      "tier": "incomparable", "label": "not comparable · no shared files",
+      "codes": ["population_disjoint"], "shared": 0
+    },
+    {
+      "name": "MoGe benchmark range: near bin differs",
+      "a": "d1.json", "b": "d5.json",
+      "metric": "depth.eval.metric.standard.image_mean.near.absrel",
+      "tier": "incomparable",
+      "label": "not comparable · bins differ (near 0.01–3.81 m vs 0.01–11.6 m)",
+      "codes": ["stratification", "parameter", "population_paired"], "shared": 6
+    },
+    {
+      "name": "MoGe cap 120 clipped something: unbinned",
+      "a": "d1.json", "b": "d5.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "incomparable", "label": "not comparable · depth cap differs",
+      "codes": ["parameter", "population_paired"], "shared": 6
+    },
+    {
+      "name": "cap inert on both sides: image mean paired on the shared files",
+      "a": "d1b.json", "b": "d5b.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "paired", "label": "compared on 6 shared files",
+      "codes": ["population_paired"], "shared": 6,
+      "recompute": {"a": 0.125, "b": 0.155}
+    },
+    {
+      "name": "cap inert: pixel pool paired through the count weights",
+      "a": "d1b.json", "b": "d5b.json",
+      "metric": "depth.eval.metric.standard.pixel_pool.absrel",
+      "tier": "paired", "label": "compared on 6 shared files",
+      "codes": ["population_paired"], "shared": 6,
+      "recompute": {"a": 0.12733333333333333, "b": 0.15733333333333333}
+    },
+    {
+      "name": "cap inert: binned pixel pool paired through the binned count weights",
+      "a": "d1b.json", "b": "d5b.json",
+      "metric": "depth.eval.metric.standard.pixel_pool.near.absrel",
+      "tier": "paired", "label": "compared on 6 shared files",
+      "codes": ["population_paired"], "shared": 6
+    },
+    {
+      "name": "cap inert: FID cannot be recomputed",
+      "a": "d1b.json", "b": "d5b.json",
+      "metric": "depth.eval.metric.image_quality.fid",
+      "tier": "comparable", "label": "comparable · computed on different files: 6 of 9 shared",
+      "codes": ["population_partial"], "shared": 6
+    },
+    {
+      "name": "fitted vs raw run: metric space",
+      "a": "d6.json", "b": "d4.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "incomparable", "label": "not comparable · depth alignment applied differs",
+      "codes": ["parameter", "domain"], "shared": null,
+      "hint": "compare the native space, or two fitted runs",
+      "measures": [{"key": "prediction.resample", "kind": "factor", "d": 0.04}]
+    },
+    {
+      "name": "fitted vs raw run: native space is untouched by the fit",
+      "a": "d6.json", "b": "d4.json",
+      "metric": "depth.eval.native.standard.image_mean.absrel",
+      "tier": "comparable", "label": "comparable · prediction resampled (1.04×1.02 vs 1×1)",
+      "codes": ["domain"], "shared": null,
+      "measures": [{"key": "prediction.resample", "kind": "factor", "d": 0.04}]
+    },
+    {
+      "name": "two fitted runs, one resized",
+      "a": "d6.json", "b": "d7.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "comparable", "label": "comparable · prediction resampled (1.04×1.02 vs 1×1)",
+      "codes": ["domain"], "shared": null,
+      "measures": [{"key": "prediction.resample", "kind": "factor", "d": 0.04}]
+    },
+    {
+      "name": "subset: image mean",
+      "a": "d1.json", "b": "d8.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "paired", "label": "compared on 3 shared files",
+      "codes": ["population_paired"], "shared": 3,
+      "recompute": {"a": 0.11, "b": 0.11}
+    },
+    {
+      "name": "subset: binned image mean with per-file strata",
+      "a": "d1.json", "b": "d8.json",
+      "metric": "depth.eval.metric.standard.image_mean.near.absrel",
+      "tier": "paired", "label": "compared on 3 shared files",
+      "codes": ["population_paired"], "shared": 3,
+      "recompute": {"a": 0.055, "b": 0.055}
+    },
+    {
+      "name": "subset: FID",
+      "a": "d1.json", "b": "d8.json",
+      "metric": "depth.eval.metric.image_quality.fid",
+      "tier": "comparable", "label": "comparable · computed on different files: 3 of 6 shared",
+      "codes": ["population_partial"], "shared": 3
+    },
+    {
+      "name": "absrel revised: image mean",
+      "a": "d1.json", "b": "d9.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "incomparable", "label": "not comparable · absrel definition revised (rev 1 vs 2)",
+      "codes": ["revision"], "shared": null
+    },
+    {
+      "name": "absrel revised: pixel pool",
+      "a": "d1.json", "b": "d9.json",
+      "metric": "depth.eval.metric.standard.pixel_pool.absrel",
+      "tier": "incomparable", "label": "not comparable · absrel definition revised (rev 1 vs 2)",
+      "codes": ["revision"], "shared": null
+    },
+    {
+      "name": "absrel revised: delta1 is untouched",
+      "a": "d1.json", "b": "d9.json",
+      "metric": "depth.eval.metric.standard.image_mean.delta1",
+      "tier": "same", "label": "same protocol", "codes": [], "shared": null
+    },
+    {
+      "name": "undescribed parameter on one side",
+      "a": "d1.json", "b": "d10.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "incomparable", "label": "not comparable · depth.debug.tile_px not recorded",
+      "codes": ["not_recorded"], "shared": null
+    },
+    {
+      "name": "unknown role compares equal (with and without an explicit compare)",
+      "a": "d10u.json", "b": "d10v.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "incomparable", "label": "not comparable · quantization bits differs",
+      "codes": ["parameter", "parameter"], "shared": null
+    },
+    {
+      "name": "metric name outside the declared axes",
+      "a": "d1.json", "b": "d1.json",
+      "metric": "depth.eval.bogus.absrel",
+      "tier": "incomparable", "label": "not comparable · metric name does not decompose",
+      "codes": ["schema"], "shared": null
+    },
+    {
+      "name": "unsupported major, equal parameters",
+      "a": "u1.json", "b": "d1.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "same", "label": "same protocol", "codes": ["schema"], "shared": null
+    },
+    {
+      "name": "unsupported major, a parameter differs",
+      "a": "u2.json", "b": "d1.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "incomparable", "label": "not comparable · depth.cap.max_m differs",
+      "codes": ["schema", "schema"], "shared": null
+    },
+    {
+      "name": "legacy: vae_crop grid",
+      "a": "l1.json", "b": "l2.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "comparable", "label": "comparable · evaluated grid differs by 0.9 %",
+      "codes": ["domain"], "shared": null,
+      "measures": [{"key": "domain.grid", "kind": "size", "d": 0.009321}]
+    },
+    {
+      "name": "legacy: per-file subset, image mean",
+      "a": "l1.json", "b": "l3.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "paired", "label": "compared on 3 shared files",
+      "codes": ["population_paired"], "shared": 3,
+      "recompute": {"a": 0.11, "b": 0.11}
+    },
+    {
+      "name": "legacy: per-file subset, pixel pool has no weights in v1",
+      "a": "l1.json", "b": "l3.json",
+      "metric": "depth.eval.metric.standard.pixel_pool.absrel",
+      "tier": "comparable", "label": "comparable · computed on different files: 3 of 6 shared",
+      "codes": ["population_partial"], "shared": 3
+    },
+    {
+      "name": "legacy: no per-file metrics, no manifest",
+      "a": "l1.json", "b": "l4.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "incomparable", "label": "not comparable · evaluated files not recorded",
+      "codes": ["population_unknown"], "shared": null
+    },
+    {
+      "name": "legacy: metrics_revision 1 vs 3",
+      "a": "m1.json", "b": "m3.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "incomparable", "label": "not comparable · invalid-value policy differs",
+      "codes": ["parameter"], "shared": null
+    },
+    {
+      "name": "legacy vs v2: identities never match",
+      "a": "l1.json", "b": "d1.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
+      "tier": "incomparable", "label": "not comparable · GT differs",
+      "codes": ["reference", "not_recorded", "not_recorded", "not_recorded", "not_recorded"],
+      "shared": null
+    },
+    {
+      "name": "legacy vs v2: the benchmark bins themselves agree",
+      "a": "l1.json", "b": "d1.json",
+      "metric": "depth.eval.metric.standard.image_mean.near.absrel",
+      "tier": "incomparable", "label": "not comparable · GT differs",
+      "codes": ["reference", "not_recorded", "not_recorded", "not_recorded", "not_recorded"],
+      "shared": null
+    },
+    {
+      "name": "synthetic modality: truncated audio",
+      "a": "s1.json", "b": "s2.json",
+      "metric": "audio.eval.clip_mean.sisdr",
+      "tier": "comparable", "label": "comparable · truncated audio differs by 4.0 %",
+      "codes": ["domain"], "shared": null,
+      "measures": [{"key": "audio.truncated_s", "kind": "count", "d": 0.04}]
+    },
+    {
+      "name": "synthetic modality: sample rate",
+      "a": "s1.json", "b": "s3.json",
+      "metric": "audio.eval.clip_mean.sisdr",
+      "tier": "incomparable", "label": "not comparable · sample rate differs",
+      "codes": ["parameter"], "shared": null
+    },
+    {
+      "name": "synthetic modality: subset, clip mean",
+      "a": "s1.json", "b": "s4.json",
+      "metric": "audio.eval.clip_mean.sisdr",
+      "tier": "paired", "label": "compared on 3 shared files",
+      "codes": ["population_paired"], "shared": 3,
+      "recompute": {"a": 11.333333333333334, "b": 11.333333333333334}
+    },
+    {
+      "name": "synthetic modality: subset, word pool through the words weights",
+      "a": "s1.json", "b": "s4.json",
+      "metric": "audio.eval.word_pool.wer",
+      "tier": "paired", "label": "compared on 3 shared files",
+      "codes": ["population_paired"], "shared": 3,
+      "recompute": {"a": 0.1325, "b": 0.1325}
+    },
+    {
+      "name": "synthetic modality: subset, binned word pool",
+      "a": "s1.json", "b": "s4.json",
+      "metric": "audio.eval.word_pool.low.wer",
+      "tier": "paired", "label": "compared on 3 shared files",
+      "codes": ["population_paired"], "shared": 3,
+      "recompute": {"a": 0.13818181818181818, "b": 0.13818181818181818}
+    },
+    {
+      "name": "synthetic modality: SNR edges, binned",
+      "a": "s1.json", "b": "s5.json",
+      "metric": "audio.eval.clip_mean.low.sisdr",
+      "tier": "incomparable", "label": "not comparable · bins differ (low 0–10 dB vs 0–5 dB)",
+      "codes": ["stratification"], "shared": null
+    },
+    {
+      "name": "synthetic modality: SNR edges, total bin",
+      "a": "s1.json", "b": "s5.json",
+      "metric": "audio.eval.clip_mean.all.sisdr",
+      "tier": "incomparable", "label": "not comparable · bins differ (all 0–40 dB vs 0–40 dB)",
+      "codes": ["stratification"], "shared": null
+    },
+    {
+      "name": "synthetic modality: SNR edges, unbinned",
+      "a": "s1.json", "b": "s5.json",
+      "metric": "audio.eval.clip_mean.sisdr",
+      "tier": "same", "label": "same protocol", "codes": [], "shared": null
+    },
+    {
+      "name": "synthetic modality: denoising differs but does not apply",
+      "a": "s1.json", "b": "s6.json",
+      "metric": "audio.eval.clip_mean.sisdr",
+      "tier": "same", "label": "same protocol", "codes": [], "shared": null
+    }
+  ]
+}

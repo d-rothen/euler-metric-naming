@@ -1,0 +1,160 @@
+{
+ "description": "Globs (docs/contract.md 4.2): * matches any run including dots; everything else is literal; case-sensitive; anchored.",
+ "cases": [
+  {
+   "pattern": "*",
+   "name": "absrel",
+   "match": true
+  },
+  {
+   "pattern": "*",
+   "name": "",
+   "match": true
+  },
+  {
+   "pattern": "absrel",
+   "name": "absrel",
+   "match": true
+  },
+  {
+   "pattern": "absrel",
+   "name": "absrel.median",
+   "match": false
+  },
+  {
+   "pattern": "kid*",
+   "name": "kid_mean",
+   "match": true
+  },
+  {
+   "pattern": "kid*",
+   "name": "kid",
+   "match": true
+  },
+  {
+   "pattern": "kid*",
+   "name": "skid",
+   "match": false
+  },
+  {
+   "pattern": "hautiere_*",
+   "name": "hautiere_e",
+   "match": true
+  },
+  {
+   "pattern": "hautiere_*",
+   "name": "hautiere",
+   "match": false
+  },
+  {
+   "pattern": "*.median",
+   "name": "absrel.median",
+   "match": true
+  },
+  {
+   "pattern": "*.median",
+   "name": "absrel.p90",
+   "match": false
+  },
+  {
+   "pattern": "rho_a*",
+   "name": "rho_a.mean",
+   "match": true
+  },
+  {
+   "pattern": "a*b*c",
+   "name": "abc",
+   "match": true
+  },
+  {
+   "pattern": "a*b*c",
+   "name": "aXbYc",
+   "match": true
+  },
+  {
+   "pattern": "a*b*c",
+   "name": "acb",
+   "match": false
+  },
+  {
+   "pattern": "a*b*c",
+   "name": "abcb",
+   "match": false
+  },
+  {
+   "pattern": "a*a",
+   "name": "a",
+   "match": false
+  },
+  {
+   "pattern": "a*a",
+   "name": "aa",
+   "match": true
+  },
+  {
+   "pattern": "abs?el",
+   "name": "absrel",
+   "match": false
+  },
+  {
+   "pattern": "abs?el",
+   "name": "abs?el",
+   "match": true
+  },
+  {
+   "pattern": "[ab]",
+   "name": "a",
+   "match": false
+  },
+  {
+   "pattern": "[ab]",
+   "name": "[ab]",
+   "match": true
+  },
+  {
+   "pattern": "ABSREL",
+   "name": "absrel",
+   "match": false
+  },
+  {
+   "pattern": "**",
+   "name": "x.y",
+   "match": true
+  },
+  {
+   "pattern": "reference.*",
+   "name": "reference.gt",
+   "match": true
+  },
+  {
+   "pattern": "depth.*",
+   "name": "depthx",
+   "match": false
+  },
+  {
+   "pattern": "*b*",
+   "name": "abc",
+   "match": true
+  },
+  {
+   "pattern": "*b*",
+   "name": "ac",
+   "match": false
+  },
+  {
+   "pattern": "a**b",
+   "name": "ab",
+   "match": true
+  },
+  {
+   "pattern": "",
+   "name": "",
+   "match": true
+  },
+  {
+   "pattern": "",
+   "name": "a",
+   "match": false
+  }
+ ]
+}

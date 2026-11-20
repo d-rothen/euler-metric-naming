@@ -1,0 +1,655 @@
+{
+ "description": "Observation measures and phrases (docs/contract.md 3.3). d is null when unmeasurable (compare |delta| <= 5e-7); phrase uses the label L. percent: d to the one-decimal percent text; sig3: toPrecision(3) with trailing fraction zeros removed.",
+ "measures": [
+  {
+   "name": "region identical",
+   "kind": "region",
+   "a": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "b": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "d": 0.0,
+   "phrase": "L differs by 0.0 %"
+  },
+  {
+   "name": "region half",
+   "kind": "region",
+   "a": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "b": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     5,
+     10
+    ]
+   },
+   "d": 0.5,
+   "phrase": "L differs by 50.0 %"
+  },
+  {
+   "name": "region disjoint",
+   "kind": "region",
+   "a": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "b": {
+    "frame": "cam",
+    "box": [
+     20,
+     20,
+     10,
+     10
+    ]
+   },
+   "d": 1.0,
+   "phrase": "L differs by 100.0 %"
+  },
+  {
+   "name": "region partial overlap",
+   "kind": "region",
+   "a": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "b": {
+    "frame": "cam",
+    "box": [
+     5,
+     5,
+     10,
+     10
+    ]
+   },
+   "d": 0.8571428571428571,
+   "phrase": "L differs by 85.7 %"
+  },
+  {
+   "name": "region nested crop",
+   "kind": "region",
+   "a": {
+    "frame": "cam",
+    "box": [
+     270,
+     170,
+     734,
+     1730
+    ]
+   },
+   "b": {
+    "frame": "cam",
+    "box": [
+     270,
+     170,
+     728,
+     1728
+    ]
+   },
+   "d": 0.009321,
+   "phrase": "L differs by 0.9 %"
+  },
+  {
+   "name": "region frames differ",
+   "kind": "region",
+   "a": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "b": {
+    "frame": "other",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "region box of 3",
+   "kind": "region",
+   "a": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10
+    ]
+   },
+   "b": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "region negative",
+   "kind": "region",
+   "a": {
+    "frame": "cam",
+    "box": [
+     0,
+     -1,
+     10,
+     10
+    ]
+   },
+   "b": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "region boolean",
+   "kind": "region",
+   "a": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     true,
+     10
+    ]
+   },
+   "b": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "region no frame",
+   "kind": "region",
+   "a": {
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "b": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     10
+    ]
+   },
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "region empty boxes",
+   "kind": "region",
+   "a": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     0,
+     10
+    ]
+   },
+   "b": {
+    "frame": "cam",
+    "box": [
+     0,
+     0,
+     10,
+     0
+    ]
+   },
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "count",
+   "kind": "count",
+   "a": 12.0,
+   "b": 12.5,
+   "d": 0.04,
+   "phrase": "L differs by 4.0 %"
+  },
+  {
+   "name": "count both zero",
+   "kind": "count",
+   "a": 0,
+   "b": 0,
+   "d": 0.0,
+   "phrase": "L differs by 0.0 %"
+  },
+  {
+   "name": "count from zero",
+   "kind": "count",
+   "a": 0,
+   "b": 5,
+   "d": 1.0,
+   "phrase": "L differs by 100.0 %"
+  },
+  {
+   "name": "count tiny",
+   "kind": "count",
+   "a": 1000,
+   "b": 1000.4,
+   "d": 0.0003998400639744103,
+   "phrase": "L differs by <0.1 %"
+  },
+  {
+   "name": "count negative",
+   "kind": "count",
+   "a": -1,
+   "b": 2,
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "count string",
+   "kind": "count",
+   "a": "3",
+   "b": 3,
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "count boolean",
+   "kind": "count",
+   "a": true,
+   "b": 1,
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "fraction",
+   "kind": "fraction",
+   "a": 0.25,
+   "b": 0.3,
+   "d": 0.05,
+   "phrase": "L differs by 5.0 pp"
+  },
+  {
+   "name": "fraction above 1",
+   "kind": "fraction",
+   "a": 1.2,
+   "b": 0.5,
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "fraction negative",
+   "kind": "fraction",
+   "a": -0.1,
+   "b": 0.5,
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "factor list",
+   "kind": "factor",
+   "a": [
+    1.04,
+    1.02
+   ],
+   "b": [
+    1,
+    1
+   ],
+   "d": 0.04,
+   "phrase": "L (1.04×1.02 vs 1×1)"
+  },
+  {
+   "name": "factor scalar",
+   "kind": "factor",
+   "a": 2,
+   "b": 1,
+   "d": 1.0,
+   "phrase": "L (2 vs 1)"
+  },
+  {
+   "name": "factor equal",
+   "kind": "factor",
+   "a": [
+    1,
+    1
+   ],
+   "b": [
+    1,
+    1
+   ],
+   "d": 0.0,
+   "phrase": "L (1×1 vs 1×1)"
+  },
+  {
+   "name": "factor inverse counts",
+   "kind": "factor",
+   "a": [
+    1,
+    0.5
+   ],
+   "b": [
+    1,
+    1
+   ],
+   "d": 1.0,
+   "phrase": "L (1×0.5 vs 1×1)"
+  },
+  {
+   "name": "factor 3 significant digits",
+   "kind": "factor",
+   "a": [
+    1.0417,
+    1
+   ],
+   "b": [
+    1,
+    1
+   ],
+   "d": 0.0417,
+   "phrase": "L (1.04×1 vs 1×1)"
+  },
+  {
+   "name": "factor zero",
+   "kind": "factor",
+   "a": 0,
+   "b": 1,
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "factor mixed shapes",
+   "kind": "factor",
+   "a": [
+    1
+   ],
+   "b": 1,
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "factor lengths",
+   "kind": "factor",
+   "a": [
+    1,
+    2
+   ],
+   "b": [
+    1
+   ],
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "factor empty",
+   "kind": "factor",
+   "a": [],
+   "b": [],
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "size",
+   "kind": "size",
+   "a": [
+    734,
+    1730
+   ],
+   "b": [
+    728,
+    1728
+   ],
+   "d": 0.009321,
+   "phrase": "L differs by 0.9 %"
+  },
+  {
+   "name": "size same product",
+   "kind": "size",
+   "a": [
+    2,
+    3
+   ],
+   "b": [
+    3,
+    2
+   ],
+   "d": 0.0,
+   "phrase": "L differs by 0.0 %"
+  },
+  {
+   "name": "size lengths",
+   "kind": "size",
+   "a": [
+    1,
+    2
+   ],
+   "b": [
+    1,
+    2,
+    3
+   ],
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "size empty",
+   "kind": "size",
+   "a": [],
+   "b": [],
+   "d": null,
+   "phrase": null
+  },
+  {
+   "name": "size zero products",
+   "kind": "size",
+   "a": [
+    0,
+    5
+   ],
+   "b": [
+    0,
+    3
+   ],
+   "d": 0.0,
+   "phrase": "L differs by 0.0 %"
+  },
+  {
+   "name": "unknown kind",
+   "kind": "volume",
+   "a": 1,
+   "b": 2,
+   "d": null,
+   "phrase": null
+  }
+ ],
+ "percent": [
+  {
+   "d": 0,
+   "text": "0.0"
+  },
+  {
+   "d": 0.0001,
+   "text": "<0.1"
+  },
+  {
+   "d": 0.00049,
+   "text": "<0.1"
+  },
+  {
+   "d": 0.001,
+   "text": "0.1"
+  },
+  {
+   "d": 0.00095,
+   "text": "0.1"
+  },
+  {
+   "d": 0.037,
+   "text": "3.7"
+  },
+  {
+   "d": 0.12,
+   "text": "12.0"
+  },
+  {
+   "d": 1,
+   "text": "100.0"
+  },
+  {
+   "d": 0.0999,
+   "text": "10.0"
+  },
+  {
+   "d": 0.036785,
+   "text": "3.7"
+  },
+  {
+   "d": 0.009321,
+   "text": "0.9"
+  }
+ ],
+ "sig3": [
+  {
+   "value": 0,
+   "text": "0"
+  },
+  {
+   "value": -0.0,
+   "text": "0"
+  },
+  {
+   "value": 1,
+   "text": "1"
+  },
+  {
+   "value": 1.0417,
+   "text": "1.04"
+  },
+  {
+   "value": 0.01,
+   "text": "0.01"
+  },
+  {
+   "value": 3.8114157444218852,
+   "text": "3.81"
+  },
+  {
+   "value": 11.560000000000002,
+   "text": "11.6"
+  },
+  {
+   "value": 14.474749077755222,
+   "text": "14.5"
+  },
+  {
+   "value": 100,
+   "text": "100"
+  },
+  {
+   "value": 1234,
+   "text": "1.23e+3"
+  },
+  {
+   "value": 1.2345e-05,
+   "text": "0.0000123"
+  },
+  {
+   "value": 1.5e-07,
+   "text": "1.5e-7"
+  },
+  {
+   "value": 1.125,
+   "text": "1.13"
+  },
+  {
+   "value": 0.125,
+   "text": "0.125"
+  },
+  {
+   "value": -2.5,
+   "text": "-2.5"
+  },
+  {
+   "value": 999.5,
+   "text": "1e+3"
+  },
+  {
+   "value": 1e+21,
+   "text": "1e+21"
+  },
+  {
+   "value": 32,
+   "text": "32"
+  },
+  {
+   "value": 0.5,
+   "text": "0.5"
+  },
+  {
+   "value": 2.675,
+   "text": "2.67"
+  },
+  {
+   "value": 1.04,
+   "text": "1.04"
+  }
+ ]
+}

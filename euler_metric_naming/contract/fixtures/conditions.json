@@ -1,0 +1,694 @@
+{
+ "description": "Three-valued condition evaluation (docs/contract.md 7). Every condition is evaluated with the parameters and observations below; expected is true, false or unknown.",
+ "parameters": {
+  "n": 5,
+  "f": 0.5,
+  "s": "a",
+  "b": true,
+  "z": null,
+  "l": [
+   1,
+   2
+  ],
+  "o": {
+   "k": 1
+  },
+  "zero": 0
+ },
+ "observations": {
+  "c": 0,
+  "r": 0.25
+ },
+ "cases": [
+  {
+   "name": "exists: present",
+   "condition": {
+    "param": "n",
+    "op": "exists"
+   },
+   "expected": "true"
+  },
+  {
+   "name": "exists: missing",
+   "condition": {
+    "param": "missing",
+    "op": "exists"
+   },
+   "expected": "false"
+  },
+  {
+   "name": "exists: null",
+   "condition": {
+    "param": "z",
+    "op": "exists"
+   },
+   "expected": "false"
+  },
+  {
+   "name": "exists: observation",
+   "condition": {
+    "observation": "c",
+    "op": "exists"
+   },
+   "expected": "true"
+  },
+  {
+   "name": "exists: param is not an observation",
+   "condition": {
+    "param": "c",
+    "op": "exists"
+   },
+   "expected": "false"
+  },
+  {
+   "name": "exists: observation is not a param",
+   "condition": {
+    "observation": "n",
+    "op": "exists"
+   },
+   "expected": "false"
+  },
+  {
+   "name": "eq: number",
+   "condition": {
+    "param": "n",
+    "op": "eq",
+    "value": 5
+   },
+   "expected": "true"
+  },
+  {
+   "name": "eq: 5 == 5.0",
+   "condition": {
+    "param": "n",
+    "op": "eq",
+    "value": 5.0
+   },
+   "expected": "true"
+  },
+  {
+   "name": "eq: other number",
+   "condition": {
+    "param": "n",
+    "op": "eq",
+    "value": 6
+   },
+   "expected": "false"
+  },
+  {
+   "name": "eq: string vs number",
+   "condition": {
+    "param": "n",
+    "op": "eq",
+    "value": "5"
+   },
+   "expected": "false"
+  },
+  {
+   "name": "eq: boolean",
+   "condition": {
+    "param": "b",
+    "op": "eq",
+    "value": true
+   },
+   "expected": "true"
+  },
+  {
+   "name": "eq: true is not 1",
+   "condition": {
+    "param": "b",
+    "op": "eq",
+    "value": 1
+   },
+   "expected": "false"
+  },
+  {
+   "name": "eq: 0 is not false",
+   "condition": {
+    "param": "zero",
+    "op": "eq",
+    "value": false
+   },
+   "expected": "false"
+  },
+  {
+   "name": "eq: string",
+   "condition": {
+    "param": "s",
+    "op": "eq",
+    "value": "a"
+   },
+   "expected": "true"
+  },
+  {
+   "name": "eq: list",
+   "condition": {
+    "param": "l",
+    "op": "eq",
+    "value": [
+     1.0,
+     2
+    ]
+   },
+   "expected": "true"
+  },
+  {
+   "name": "eq: list order",
+   "condition": {
+    "param": "l",
+    "op": "eq",
+    "value": [
+     2,
+     1
+    ]
+   },
+   "expected": "false"
+  },
+  {
+   "name": "eq: object",
+   "condition": {
+    "param": "o",
+    "op": "eq",
+    "value": {
+     "k": 1.0
+    }
+   },
+   "expected": "true"
+  },
+  {
+   "name": "eq: object keys",
+   "condition": {
+    "param": "o",
+    "op": "eq",
+    "value": {
+     "k": 1,
+     "j": 2
+    }
+   },
+   "expected": "false"
+  },
+  {
+   "name": "eq: missing",
+   "condition": {
+    "param": "missing",
+    "op": "eq",
+    "value": 1
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "eq: null operand",
+   "condition": {
+    "param": "z",
+    "op": "eq",
+    "value": null
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "eq: observation zero",
+   "condition": {
+    "observation": "c",
+    "op": "eq",
+    "value": 0
+   },
+   "expected": "true"
+  },
+  {
+   "name": "eq: no value",
+   "condition": {
+    "param": "n",
+    "op": "eq"
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "ne: differs",
+   "condition": {
+    "param": "n",
+    "op": "ne",
+    "value": 6
+   },
+   "expected": "true"
+  },
+  {
+   "name": "ne: equal",
+   "condition": {
+    "param": "n",
+    "op": "ne",
+    "value": 5
+   },
+   "expected": "false"
+  },
+  {
+   "name": "ne: missing",
+   "condition": {
+    "param": "missing",
+    "op": "ne",
+    "value": 1
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "lt: true",
+   "condition": {
+    "param": "n",
+    "op": "lt",
+    "value": 6
+   },
+   "expected": "true"
+  },
+  {
+   "name": "lt: false",
+   "condition": {
+    "param": "n",
+    "op": "lt",
+    "value": 5
+   },
+   "expected": "false"
+  },
+  {
+   "name": "le: equal",
+   "condition": {
+    "param": "n",
+    "op": "le",
+    "value": 5
+   },
+   "expected": "true"
+  },
+  {
+   "name": "gt: fraction",
+   "condition": {
+    "param": "n",
+    "op": "gt",
+    "value": 4.5
+   },
+   "expected": "true"
+  },
+  {
+   "name": "ge: 5 >= 5.0",
+   "condition": {
+    "param": "n",
+    "op": "ge",
+    "value": 5.0
+   },
+   "expected": "true"
+  },
+  {
+   "name": "lt: float operand",
+   "condition": {
+    "param": "f",
+    "op": "lt",
+    "value": 1
+   },
+   "expected": "true"
+  },
+  {
+   "name": "gt: observation",
+   "condition": {
+    "observation": "r",
+    "op": "gt",
+    "value": 0.5
+   },
+   "expected": "false"
+  },
+  {
+   "name": "lt: string operand",
+   "condition": {
+    "param": "s",
+    "op": "lt",
+    "value": 1
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "gt: boolean operand",
+   "condition": {
+    "param": "b",
+    "op": "gt",
+    "value": 0
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "gt: boolean value",
+   "condition": {
+    "param": "n",
+    "op": "gt",
+    "value": true
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "lt: string value",
+   "condition": {
+    "param": "n",
+    "op": "lt",
+    "value": "6"
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "lt: missing",
+   "condition": {
+    "param": "missing",
+    "op": "lt",
+    "value": 1
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "in: member",
+   "condition": {
+    "param": "s",
+    "op": "in",
+    "value": [
+     "a",
+     "b"
+    ]
+   },
+   "expected": "true"
+  },
+  {
+   "name": "in: not a member",
+   "condition": {
+    "param": "s",
+    "op": "in",
+    "value": [
+     "c"
+    ]
+   },
+   "expected": "false"
+  },
+  {
+   "name": "in: numeric equality",
+   "condition": {
+    "param": "n",
+    "op": "in",
+    "value": [
+     5.0
+    ]
+   },
+   "expected": "true"
+  },
+  {
+   "name": "in: list member",
+   "condition": {
+    "param": "l",
+    "op": "in",
+    "value": [
+     [
+      1,
+      2
+     ]
+    ]
+   },
+   "expected": "true"
+  },
+  {
+   "name": "in: true is not 1",
+   "condition": {
+    "param": "b",
+    "op": "in",
+    "value": [
+     1
+    ]
+   },
+   "expected": "false"
+  },
+  {
+   "name": "in: value not a list",
+   "condition": {
+    "param": "n",
+    "op": "in",
+    "value": 5
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "in: missing",
+   "condition": {
+    "param": "missing",
+    "op": "in",
+    "value": [
+     1
+    ]
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "all: empty",
+   "condition": {
+    "all": []
+   },
+   "expected": "true"
+  },
+  {
+   "name": "any: empty",
+   "condition": {
+    "any": []
+   },
+   "expected": "false"
+  },
+  {
+   "name": "all: true, true",
+   "condition": {
+    "all": [
+     {
+      "param": "n",
+      "op": "exists"
+     },
+     {
+      "param": "n",
+      "op": "exists"
+     }
+    ]
+   },
+   "expected": "true"
+  },
+  {
+   "name": "all: true, unknown",
+   "condition": {
+    "all": [
+     {
+      "param": "n",
+      "op": "exists"
+     },
+     {
+      "param": "missing",
+      "op": "eq",
+      "value": 1
+     }
+    ]
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "all: false, unknown",
+   "condition": {
+    "all": [
+     {
+      "param": "missing",
+      "op": "exists"
+     },
+     {
+      "param": "missing",
+      "op": "eq",
+      "value": 1
+     }
+    ]
+   },
+   "expected": "false"
+  },
+  {
+   "name": "all: unknown, false",
+   "condition": {
+    "all": [
+     {
+      "param": "missing",
+      "op": "eq",
+      "value": 1
+     },
+     {
+      "param": "missing",
+      "op": "exists"
+     }
+    ]
+   },
+   "expected": "false"
+  },
+  {
+   "name": "any: true, unknown",
+   "condition": {
+    "any": [
+     {
+      "param": "missing",
+      "op": "eq",
+      "value": 1
+     },
+     {
+      "param": "n",
+      "op": "exists"
+     }
+    ]
+   },
+   "expected": "true"
+  },
+  {
+   "name": "any: false, unknown",
+   "condition": {
+    "any": [
+     {
+      "param": "missing",
+      "op": "exists"
+     },
+     {
+      "param": "missing",
+      "op": "eq",
+      "value": 1
+     }
+    ]
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "any: false, false",
+   "condition": {
+    "any": [
+     {
+      "param": "missing",
+      "op": "exists"
+     },
+     {
+      "param": "missing",
+      "op": "exists"
+     }
+    ]
+   },
+   "expected": "false"
+  },
+  {
+   "name": "not: true",
+   "condition": {
+    "not": {
+     "param": "n",
+     "op": "exists"
+    }
+   },
+   "expected": "false"
+  },
+  {
+   "name": "not: false",
+   "condition": {
+    "not": {
+     "param": "missing",
+     "op": "exists"
+    }
+   },
+   "expected": "true"
+  },
+  {
+   "name": "not: unknown",
+   "condition": {
+    "not": {
+     "param": "missing",
+     "op": "eq",
+     "value": 1
+    }
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "nested",
+   "condition": {
+    "not": {
+     "any": [
+      {
+       "param": "missing",
+       "op": "eq",
+       "value": 1
+      },
+      {
+       "param": "n",
+       "op": "eq",
+       "value": 5
+      }
+     ]
+    }
+   },
+   "expected": "false"
+  },
+  {
+   "name": "malformed: unknown op",
+   "condition": {
+    "param": "s",
+    "op": "regex",
+    "value": "a"
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "malformed: two forms",
+   "condition": {
+    "param": "n",
+    "observation": "c",
+    "op": "exists"
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "malformed: not an object",
+   "condition": "n exists",
+   "expected": "unknown"
+  },
+  {
+   "name": "malformed: empty object",
+   "condition": {},
+   "expected": "unknown"
+  },
+  {
+   "name": "malformed: all not a list",
+   "condition": {
+    "all": {
+     "param": "n",
+     "op": "exists"
+    }
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "malformed: key not a string",
+   "condition": {
+    "param": 5,
+    "op": "exists"
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "malformed member in all",
+   "condition": {
+    "all": [
+     {
+      "param": "n",
+      "op": "exists"
+     },
+     "garbage"
+    ]
+   },
+   "expected": "unknown"
+  },
+  {
+   "name": "malformed member in any",
+   "condition": {
+    "any": [
+     {
+      "param": "n",
+      "op": "exists"
+     },
+     "garbage"
+    ]
+   },
+   "expected": "true"
+  }
+ ]
+}

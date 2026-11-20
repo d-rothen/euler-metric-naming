@@ -1,0 +1,190 @@
+{
+ "description": "RFC 8785 canonical text (docs/contract.md 9.1). input is a JSON value; inputText is JSON text to parse first (integer literals as integers: Python int, TS BigInt); special is NaN / Infinity / -Infinity. error: canonicalization must fail.",
+ "cases": [
+  {
+   "name": "1e21 switches to exponent form",
+   "input": 1e+21,
+   "canonical": "1e+21"
+  },
+  {
+   "name": "1e-7 switches to exponent form",
+   "input": 1e-07,
+   "canonical": "1e-7"
+  },
+  {
+   "name": "1e-6 stays fixed",
+   "input": 1e-06,
+   "canonical": "0.000001"
+  },
+  {
+   "name": "large double, plain digits",
+   "input": 1.2345678901234568e+20,
+   "canonical": "123456789012345680000"
+  },
+  {
+   "name": "1e20 plain digits",
+   "input": 1e+20,
+   "canonical": "100000000000000000000"
+  },
+  {
+   "name": "0.1 shortest round trip",
+   "input": 0.1,
+   "canonical": "0.1"
+  },
+  {
+   "name": "32.0 has no fraction",
+   "input": 32.0,
+   "canonical": "32"
+  },
+  {
+   "name": "-0 is 0",
+   "input": -0.0,
+   "canonical": "0"
+  },
+  {
+   "name": "smallest subnormal",
+   "input": 5e-324,
+   "canonical": "5e-324"
+  },
+  {
+   "name": "largest double",
+   "input": 1.7976931348623157e+308,
+   "canonical": "1.7976931348623157e+308"
+  },
+  {
+   "name": "max safe integer",
+   "input": 9007199254740991,
+   "canonical": "9007199254740991"
+  },
+  {
+   "name": "min safe integer",
+   "input": -9007199254740991,
+   "canonical": "-9007199254740991"
+  },
+  {
+   "name": "fraction",
+   "input": 123.456,
+   "canonical": "123.456"
+  },
+  {
+   "name": "small fixed",
+   "input": 1.234e-06,
+   "canonical": "0.000001234"
+  },
+  {
+   "name": "small exponent with fraction",
+   "input": 1.5e-07,
+   "canonical": "1.5e-7"
+  },
+  {
+   "name": "negative",
+   "input": -1.5,
+   "canonical": "-1.5"
+  },
+  {
+   "name": "numbers in a list",
+   "input": [
+    1,
+    1.0,
+    -0.0,
+    0,
+    4.5
+   ],
+   "canonical": "[1,1,0,0,4.5]"
+  },
+  {
+   "name": "controls and escapes",
+   "input": "\u0000\u0007\b\t\n\u000b\f\r\u001f\"\\/",
+   "canonical": "\"\\u0000\\u0007\\b\\t\\n\\u000b\\f\\r\\u001f\\\"\\\\/\""
+  },
+  {
+   "name": "DEL and U+2028 stay literal",
+   "input": " ",
+   "canonical": "\" \""
+  },
+  {
+   "name": "non-ASCII and astral stay literal",
+   "input": "é€😀",
+   "canonical": "\"é€😀\""
+  },
+  {
+   "name": "keys by UTF-16 code units (not code points)",
+   "input": {
+    "ﬁ": 1,
+    "😀": 2
+   },
+   "canonical": "{\"😀\":2,\"ﬁ\":1}"
+  },
+  {
+   "name": "RFC 8785 sort example",
+   "input": {
+    "€": "Euro Sign",
+    "\r": "Carriage Return",
+    "דּ": "Hebrew Letter Dalet With Dagesh",
+    "1": "One",
+    "😀": "Emoji: Grinning Face",
+    "": "Control",
+    "ö": "Latin Small Letter O With Diaeresis"
+   },
+   "canonical": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\",\"€\":\"Euro Sign\",\"😀\":\"Emoji: Grinning Face\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\"}"
+  },
+  {
+   "name": "nested and literals",
+   "input": {
+    "b": [
+     1,
+     {
+      "d": true,
+      "c": null
+     }
+    ],
+    "a": "x",
+    "e": false
+   },
+   "canonical": "{\"a\":\"x\",\"b\":[1,{\"c\":null,\"d\":true}],\"e\":false}"
+  },
+  {
+   "name": "empty containers",
+   "input": {
+    "o": {},
+    "l": []
+   },
+   "canonical": "{\"l\":[],\"o\":{}}"
+  },
+  {
+   "name": "integer above the safe range",
+   "inputText": "9007199254740992",
+   "error": true
+  },
+  {
+   "name": "integer below the safe range",
+   "inputText": "-9007199254740992",
+   "error": true
+  },
+  {
+   "name": "lone high surrogate",
+   "inputText": "\"\\ud800\"",
+   "error": true
+  },
+  {
+   "name": "lone low surrogate as key",
+   "inputText": "{\"\\udc00\": 1}",
+   "error": true
+  },
+  {
+   "name": "NaN",
+   "special": "NaN",
+   "error": true
+  },
+  {
+   "name": "Infinity",
+   "special": "Infinity",
+   "error": true
+  },
+  {
+   "name": "-Infinity",
+   "special": "-Infinity",
+   "error": true
+  }
+ ]
+}

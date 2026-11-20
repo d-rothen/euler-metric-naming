@@ -1,0 +1,240 @@
+{
+ "description": "Hash format (9.2), population manifests (9.3) and definition keys (9.4). Every hash is sha256 over the UTF-8 canonical text given beside it. definitionKeys: the object of 9.4 for the normalized contract of each listed file.",
+ "values": [
+  {
+   "name": "object",
+   "input": {
+    "b": 2,
+    "a": [
+     1.0,
+     "x"
+    ]
+   },
+   "canonical": "{\"a\":[1,\"x\"],\"b\":2}",
+   "hash": "sha256:8cbd548a32262b76a6536efe4e7ba86a0e811fcd0475d83a43e10acd0615aa37"
+  },
+  {
+   "name": "string",
+   "input": "sha256",
+   "canonical": "\"sha256\"",
+   "hash": "sha256:1ed8c1e54554a999275c4d267d24ffd9da9e784ba419c1b8d5b1d95d12dc9f74"
+  }
+ ],
+ "manifests": [
+  {
+   "name": "NFC and duplicates",
+   "ids": [
+    "café",
+    "café",
+    "a"
+   ],
+   "canonical": "[\"a\",\"café\"]",
+   "hash": "sha256:6172e28a759f678d695e275ce2a873e0d45cd85ca9f6e9e3af915e9286db6f3e"
+  },
+  {
+   "name": "code points, not UTF-16 (astral after U+FB01)",
+   "ids": [
+    "😀",
+    "ﬁ",
+    "z"
+   ],
+   "canonical": "[\"z\",\"ﬁ\",\"😀\"]",
+   "hash": "sha256:3d4a0334caf00cdbdb81d5bc01d06c924c4910e74aa2b83c97e597b1711e75dc"
+  },
+  {
+   "name": "tree paths, sorted as strings",
+   "ids": [
+    "scene:1~frame-2",
+    "scene:1~frame-10",
+    "scene:1~frame-2"
+   ],
+   "canonical": "[\"scene:1~frame-10\",\"scene:1~frame-2\"]",
+   "hash": "sha256:b222b3600c2d891fb113b49edcc8e2a3f4403fe23916f21335134ee0cc14137a"
+  },
+  {
+   "name": "empty",
+   "ids": [],
+   "canonical": "[]",
+   "hash": "sha256:4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  {
+   "name": "the d1 population",
+   "ids": [
+    "day-0",
+    "day-1",
+    "day-2",
+    "day-3",
+    "day-4",
+    "day-5"
+   ],
+   "canonical": "[\"day-0\",\"day-1\",\"day-2\",\"day-3\",\"day-4\",\"day-5\"]",
+   "hash": "sha256:69922bd7d767754c6b13b5d0a50ceec683aef4c8d028814b95d8daa828c915b2"
+  }
+ ],
+ "referenceIdentities": [
+  {
+   "name": "legacy reference identity (section 10)",
+   "input": {
+    "modality": "depth",
+    "dataset": "cerema_cropped",
+    "scope": "depth",
+    "split": null
+   },
+   "canonical": "{\"dataset\":\"cerema_cropped\",\"modality\":\"depth\",\"scope\":\"depth\",\"split\":null}",
+   "hash": "sha256:c098486b3caed120e77f898a344a08a885ef7ff60808dcaa02a991e918118624"
+  }
+ ],
+ "definitionKeys": [
+  {
+   "name": "d1: crops of one source share a key; observations and provenance excluded",
+   "files": [
+    "d1.json",
+    "d3.json"
+   ],
+   "object": {
+    "task": "depth.dense",
+    "references": {
+     "gt": {
+      "source": "cerema/rgb_left@1024x1920"
+     }
+    },
+    "parameters": {
+     "depth.alignment.applied": false,
+     "depth.cap.max_m": 38,
+     "depth.conversion": "none",
+     "depth.invalid.policy": "exclude_sentinel",
+     "sky.gt.masking": false,
+     "sky.pred.fill": false,
+     "sky.pred.masking": false
+    },
+    "stratifications": {
+     "depth.gt_range": {
+      "variable": "gt_depth_m",
+      "edges": [
+       0.01,
+       3.8114157444218852,
+       14.474749077755222,
+       32.0
+      ],
+      "labels": [
+       "near",
+       "mid",
+       "far"
+      ],
+      "closed": "left",
+      "lastClosed": true,
+      "total": "all",
+      "after": [
+       "depth.cap.max_m"
+      ],
+      "scheme": "sqrt_equal_width"
+     }
+    },
+    "metrics": {
+     "absrel": 1,
+     "count": 1,
+     "delta1": 1,
+     "fid": 1,
+     "rmse": 1
+    }
+   },
+   "canonical": "{\"metrics\":{\"absrel\":1,\"count\":1,\"delta1\":1,\"fid\":1,\"rmse\":1},\"parameters\":{\"depth.alignment.applied\":false,\"depth.cap.max_m\":38,\"depth.conversion\":\"none\",\"depth.invalid.policy\":\"exclude_sentinel\",\"sky.gt.masking\":false,\"sky.pred.fill\":false,\"sky.pred.masking\":false},\"references\":{\"gt\":{\"source\":\"cerema/rgb_left@1024x1920\"}},\"stratifications\":{\"depth.gt_range\":{\"after\":[\"depth.cap.max_m\"],\"closed\":\"left\",\"edges\":[0.01,3.8114157444218852,14.474749077755222,32],\"labels\":[\"near\",\"mid\",\"far\"],\"lastClosed\":true,\"scheme\":\"sqrt_equal_width\",\"total\":\"all\",\"variable\":\"gt_depth_m\"}},\"task\":\"depth.dense\"}",
+   "hash": "sha256:1614fdf35e77f5942d49a047f2fd33e97e0a30ad7589281a3be7f278d0476c32"
+  },
+  {
+   "name": "s1: a modality no vocabulary knows; appliesWhen false drops audio.denoise",
+   "files": [
+    "s1.json"
+   ],
+   "object": {
+    "task": "audio.separation",
+    "references": {
+     "gt": {
+      "identity": "sha256:16738421e66305e11694f673b076451c288cfcf6bbb57f2961620e1a922f87d8"
+     }
+    },
+    "parameters": {
+     "audio.mode": "separate",
+     "audio.sample_rate_hz": 16000
+    },
+    "stratifications": {
+     "audio.snr_band": {
+      "variable": "input_snr_db",
+      "edges": [
+       0,
+       10,
+       20,
+       40
+      ],
+      "labels": [
+       "low",
+       "mid",
+       "high"
+      ],
+      "closed": "left",
+      "lastClosed": true,
+      "total": "all"
+     }
+    },
+    "metrics": {
+     "sisdr": 1,
+     "wer": 1,
+     "words": 1
+    }
+   },
+   "canonical": "{\"metrics\":{\"sisdr\":1,\"wer\":1,\"words\":1},\"parameters\":{\"audio.mode\":\"separate\",\"audio.sample_rate_hz\":16000},\"references\":{\"gt\":{\"identity\":\"sha256:16738421e66305e11694f673b076451c288cfcf6bbb57f2961620e1a922f87d8\"}},\"stratifications\":{\"audio.snr_band\":{\"closed\":\"left\",\"edges\":[0,10,20,40],\"labels\":[\"low\",\"mid\",\"high\"],\"lastClosed\":true,\"total\":\"all\",\"variable\":\"input_snr_db\"}},\"task\":\"audio.separation\"}",
+   "hash": "sha256:81b952d496b6d75ff147e12e2891bfb9fabee4b586db20e66f033fb599686973"
+  },
+  {
+   "name": "l1: legacy file after the adapter",
+   "files": [
+    "l1.json"
+   ],
+   "object": {
+    "task": null,
+    "references": {
+     "gt": {
+      "identity": "sha256:c098486b3caed120e77f898a344a08a885ef7ff60808dcaa02a991e918118624"
+     }
+    },
+    "parameters": {
+     "depth.alignment.applied": false,
+     "depth.cap.max_m": 38.0,
+     "depth.invalid.policy": "exclude_sentinel",
+     "rays.fov_policy": "v2",
+     "rgb.depth_bins.policy": "v2",
+     "rgb.input.alignment_policy": "upscale",
+     "sky.gt.masking": false,
+     "sky.pred.fill": false,
+     "sky.pred.masking": false
+    },
+    "stratifications": {
+     "depth.gt_range": {
+      "variable": "gt_depth_m",
+      "edges": [
+       0.01,
+       3.8114157444218852,
+       14.474749077755222,
+       32.0
+      ],
+      "labels": [
+       "near",
+       "mid",
+       "far"
+      ],
+      "closed": "left",
+      "lastClosed": true,
+      "total": "all",
+      "after": [
+       "depth.cap.max_m"
+      ],
+      "scheme": "sqrt_equal_width"
+     }
+    },
+    "metrics": {}
+   },
+   "canonical": "{\"metrics\":{},\"parameters\":{\"depth.alignment.applied\":false,\"depth.cap.max_m\":38,\"depth.invalid.policy\":\"exclude_sentinel\",\"rays.fov_policy\":\"v2\",\"rgb.depth_bins.policy\":\"v2\",\"rgb.input.alignment_policy\":\"upscale\",\"sky.gt.masking\":false,\"sky.pred.fill\":false,\"sky.pred.masking\":false},\"references\":{\"gt\":{\"identity\":\"sha256:c098486b3caed120e77f898a344a08a885ef7ff60808dcaa02a991e918118624\"}},\"stratifications\":{\"depth.gt_range\":{\"after\":[\"depth.cap.max_m\"],\"closed\":\"left\",\"edges\":[0.01,3.8114157444218852,14.474749077755222,32],\"labels\":[\"near\",\"mid\",\"far\"],\"lastClosed\":true,\"scheme\":\"sqrt_equal_width\",\"total\":\"all\",\"variable\":\"gt_depth_m\"}},\"task\":null}",
+   "hash": "sha256:b84711d68c4e5f8cbc6b944e6db5522289667aaba0ed3b6b97b424758c8f98f5"
+  }
+ ]
+}
