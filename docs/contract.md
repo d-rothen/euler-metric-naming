@@ -761,3 +761,15 @@ both run them; see the fixtures' README for the formats.
 
 A consumer is conformant when it reproduces every expected value in these
 files.
+
+## 12. Training runs (informative)
+
+A training run's validation scores are validation sets: evaluations of the
+live model on a fixed population, each declared once with a `protocol` block
+of this contract and written with the evaluator's own metric names, plus one
+record per validation pass. A consumer turns a set and a pass into an
+evaluation and judges it with section 8, unchanged. Training telemetry
+(losses, statistics, system values) carries metric definitions of section 4.9
+in the run's naming declaration (training naming schema 2.0) and is never
+judged against an evaluation. Both are specified in
+[training.md](training.md); nothing in sections 1 to 11 changes.
