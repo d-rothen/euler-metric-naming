@@ -26,7 +26,7 @@ from euler_metric_naming import (
 
 class TestMetricNamespaceInit:
     def test_package_version(self):
-        assert __version__ == "0.2.0"
+        assert __version__ == "0.3.0"
 
     @pytest.mark.skipif(
         importlib.util.find_spec("euler_dataset_contract") is None,

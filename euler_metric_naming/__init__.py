@@ -12,7 +12,7 @@ from .descriptions import MetricDescription
 from .matching import compare_stages, filter_glob, filter_kind
 from .namespace import MetricNamespace
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "AxisDeclaration",
