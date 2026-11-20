@@ -1,0 +1,685 @@
+{
+  "$schema": "https://github.com/d-rothen/euler-metric-naming/contract/vocabulary-1.schema.json",
+  "id": "euler.points3d",
+  "version": "1.0",
+  "title": "Euler point-map evaluation",
+  "description": "Dense and sparse 3D point maps: gauge alignment, point errors and cloud distances.",
+  "descriptors": {
+    "points3d.alignment.mode": {
+      "label": "point-map alignment mode",
+      "role": "provenance",
+      "description": "Configured gauge alignment (none, scale, similarity, auto)."
+    },
+    "points3d.alignment.applied": {
+      "label": "point-map alignment applied",
+      "role": "definition",
+      "affects": {
+        "axes": {
+          "space": [
+            "metric"
+          ]
+        }
+      },
+      "hint": "compare the native space, or two aligned runs",
+      "description": "Whether a gauge alignment produced the metric space (auto that resolved to none counts as not applied)."
+    },
+    "points3d.f_a.threshold_m": {
+      "label": "F_A threshold",
+      "role": "definition",
+      "unit": "m",
+      "affects": {
+        "metrics": [
+          "f_a*"
+        ]
+      },
+      "description": "Distance threshold up to which F_A integrates the F-score curve."
+    }
+  },
+  "metrics": {
+    "mae3d": {
+      "id": "points3d.mae3d",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D EPE (MAE)",
+      "description": "Mean Euclidean point error.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "mean",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "rmse3d": {
+      "id": "points3d.rmse3d",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D RMSE",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "rms",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "median3d": {
+      "id": "points3d.median3d",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Median Error",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "p90": {
+      "id": "points3d.p90",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Error P90",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "p95": {
+      "id": "points3d.p95",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Error P95",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "rel_median": {
+      "id": "points3d.rel_median",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Relative 3D Error (Median)",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "rel_p90": {
+      "id": "points3d.rel_p90",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Relative 3D Error (P90)",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "radial_mae": {
+      "id": "points3d.radial_mae",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Radial MAE (depth)",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "radial_rmse": {
+      "id": "points3d.radial_rmse",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Radial RMSE (depth)",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "lateral_mae": {
+      "id": "points3d.lateral_mae",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Lateral MAE (camera)",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "lateral_rmse": {
+      "id": "points3d.lateral_rmse",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Lateral RMSE (camera)",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "lateral_fraction": {
+      "id": "points3d.lateral_fraction",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Lateral Error Fraction",
+      "direction": "lower",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "chamfer.accuracy": {
+      "id": "points3d.chamfer.accuracy",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Chamfer Accuracy",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "chamfer.completeness": {
+      "id": "points3d.chamfer.completeness",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Chamfer Completeness",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "chamfer.distance": {
+      "id": "points3d.chamfer.distance",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Chamfer Distance",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "chamfer.median": {
+      "id": "points3d.chamfer.median",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Chamfer Median",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "f_a": {
+      "id": "points3d.f_a",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "F-score AUC (F_A)",
+      "description": "Area under the F-score curve up to points3d.f_a.threshold_m.",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "precision": {
+      "id": "points3d.precision",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Precision",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "recall": {
+      "id": "points3d.recall",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Recall",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "f1": {
+      "id": "points3d.f1",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "F1",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "count": {
+      "id": "points3d.count",
+      "kind": "statistic",
+      "rev": 1,
+      "displayName": "valid points",
+      "description": "Valid points scored per item; the weight of pooled point errors.",
+      "direction": "none",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "px",
+      "display": {
+        "scale": "none"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "acc_0_05": {
+      "id": "points3d.acc_0_05",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Acc < 0.05m",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "acc_0_1": {
+      "id": "points3d.acc_0_1",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Acc < 0.1m",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "acc_0_25": {
+      "id": "points3d.acc_0_25",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Acc < 0.25m",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "acc_0_5": {
+      "id": "points3d.acc_0_5",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Acc < 0.5m",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "acc_1": {
+      "id": "points3d.acc_1",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Acc < 1m",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "acc_rel_0_05": {
+      "id": "points3d.acc_rel_0_05",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Rel Acc < 0.05",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "acc_rel_0_1": {
+      "id": "points3d.acc_rel_0_1",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Rel Acc < 0.1",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "acc_rel_0_25": {
+      "id": "points3d.acc_rel_0_25",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "3D Rel Acc < 0.25",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    }
+  },
+  "reducers": {},
+  "stratificationSchemes": {}
+}

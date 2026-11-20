@@ -1,0 +1,888 @@
+{
+  "$schema": "https://github.com/d-rothen/euler-metric-naming/contract/vocabulary-1.schema.json",
+  "id": "euler.rgb",
+  "version": "1.0",
+  "title": "Euler RGB evaluation",
+  "description": "RGB restoration and synthesis: full-reference, depth-binned, distribution and no-reference metrics.",
+  "descriptors": {
+    "rgb.fid.backend": {
+      "label": "FID backend",
+      "role": "definition",
+      "affects": {
+        "metrics": [
+          "fid",
+          "kid*"
+        ]
+      },
+      "description": "Inception feature backend of FID/KID (builtin, clean-fid)."
+    },
+    "rgb.input.alignment": {
+      "label": "input alignment",
+      "role": "definition",
+      "affects": {
+        "metrics": [
+          "hautiere_*"
+        ]
+      },
+      "description": "How the input was put on the prediction grid (none, crop_input, upscale_input, upscale_prediction, warp_input)."
+    },
+    "rgb.input.alignment_policy": {
+      "label": "input alignment policy",
+      "role": "definition",
+      "affects": {
+        "metrics": [
+          "hautiere_*"
+        ]
+      },
+      "description": "Rule choosing the input alignment: upscale (always upscale the smaller side) or follow_gt (crop when the prediction is a crop)."
+    },
+    "rgb.depth_bins.policy": {
+      "label": "depth-bin policy",
+      "role": "definition",
+      "affects": {
+        "axes": {
+          "family": [
+            "depth_binned_photometric"
+          ]
+        }
+      },
+      "description": "Revision of how GT depth is put on the RGB grid for depth-binned photometric metrics (v1, v2)."
+    },
+    "rgb.depth_bins.edges_m": {
+      "label": "photometric depth bins",
+      "role": "definition",
+      "unit": "m",
+      "affects": {
+        "axes": {
+          "family": [
+            "depth_binned_photometric"
+          ]
+        }
+      },
+      "description": "[near, far] thresholds of the fixed depth bins of depth-binned photometric metrics (euler-eval: [1, 5])."
+    }
+  },
+  "metrics": {
+    "psnr": {
+      "id": "rgb.psnr",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "PSNR",
+      "direction": "higher",
+      "bounds": [
+        null,
+        null
+      ],
+      "unit": "dB",
+      "display": {
+        "scale": "absolute",
+        "fullAt": 2,
+        "unit": "dB"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "ssim": {
+      "id": "rgb.ssim",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "SSIM",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "sce": {
+      "id": "rgb.sce",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "SCE",
+      "description": "Spectral color error.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "lpips": {
+      "id": "rgb.lpips",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "LPIPS",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "fid": {
+      "id": "rgb.fid",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "FID",
+      "description": "Fréchet Inception Distance; dataset-level.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "kid_mean": {
+      "id": "rgb.kid_mean",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "KID Mean",
+      "direction": "lower",
+      "bounds": [
+        null,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "kid_std": {
+      "id": "rgb.kid_std",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "KID Std",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "precision": {
+      "id": "rgb.edge_f1.precision",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Edge Precision",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "recall": {
+      "id": "rgb.edge_f1.recall",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Edge Recall",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "f1": {
+      "id": "rgb.edge_f1.f1",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Edge F1",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "p95": {
+      "id": "rgb.tail_errors.p95",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Tail Error P95",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "p99": {
+      "id": "rgb.tail_errors.p99",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Tail Error P99",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "relative_diff": {
+      "id": "rgb.high_frequency.relative_diff",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "HF Relative Diff",
+      "direction": "higher",
+      "bounds": [
+        null,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "pred_hf_ratio": {
+      "id": "rgb.high_frequency.pred_hf_ratio",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Predicted HF Ratio",
+      "direction": "none",
+      "bounds": [
+        null,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "none"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "gt_hf_ratio": {
+      "id": "rgb.high_frequency.gt_hf_ratio",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "GT HF Ratio",
+      "direction": "none",
+      "bounds": [
+        null,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "none"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "gt",
+        "input",
+        "segmentation"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mae": {
+      "id": "rgb.benchmark.mae",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "MAE",
+      "description": "Photometric MAE within a GT-depth benchmark bin.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mse": {
+      "id": "rgb.benchmark.mse",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "MSE",
+      "description": "Photometric MSE within a GT-depth benchmark bin.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "niqe": {
+      "id": "rgb.niqe",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "NIQE",
+      "description": "No-reference naturalness score of the prediction.",
+      "direction": "lower",
+      "bounds": [
+        null,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "input"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "fade": {
+      "id": "rgb.fade",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "FADE",
+      "description": "No-reference fog density of the prediction.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "input"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "musiq": {
+      "id": "rgb.musiq",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "MUSIQ",
+      "direction": "higher",
+      "bounds": [
+        null,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "input"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "clipiqa": {
+      "id": "rgb.clipiqa",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "CLIP-IQA",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "input"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "hautiere_e": {
+      "id": "rgb.hautiere_e",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Hautière e",
+      "description": "Rate of new visible edges against the input.",
+      "direction": "higher",
+      "bounds": [
+        null,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "input"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "hautiere_r": {
+      "id": "rgb.hautiere_r",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Hautière r̄",
+      "description": "Mean ratio of visible-edge gradients against the input.",
+      "direction": "higher",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "input"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "hautiere_sigma": {
+      "id": "rgb.hautiere_sigma",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Hautière σ",
+      "description": "Percentage of saturated pixels created.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "requires": [
+        "input"
+      ],
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mae.all": {
+      "id": "rgb.depth_binned.mae.all",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Depth-binned MAE (all)",
+      "description": "Photometric MAE over pixels in the fixed 'all' GT-depth bin (rgb.depth_bins.edges_m).",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mae.near": {
+      "id": "rgb.depth_binned.mae.near",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Depth-binned MAE (near)",
+      "description": "Photometric MAE over pixels in the fixed 'near' GT-depth bin (rgb.depth_bins.edges_m).",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mae.mid": {
+      "id": "rgb.depth_binned.mae.mid",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Depth-binned MAE (mid)",
+      "description": "Photometric MAE over pixels in the fixed 'mid' GT-depth bin (rgb.depth_bins.edges_m).",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mae.far": {
+      "id": "rgb.depth_binned.mae.far",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Depth-binned MAE (far)",
+      "description": "Photometric MAE over pixels in the fixed 'far' GT-depth bin (rgb.depth_bins.edges_m).",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mse.all": {
+      "id": "rgb.depth_binned.mse.all",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Depth-binned MSE (all)",
+      "description": "Photometric MSE over pixels in the fixed 'all' GT-depth bin (rgb.depth_bins.edges_m).",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mse.near": {
+      "id": "rgb.depth_binned.mse.near",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Depth-binned MSE (near)",
+      "description": "Photometric MSE over pixels in the fixed 'near' GT-depth bin (rgb.depth_bins.edges_m).",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mse.mid": {
+      "id": "rgb.depth_binned.mse.mid",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Depth-binned MSE (mid)",
+      "description": "Photometric MSE over pixels in the fixed 'mid' GT-depth bin (rgb.depth_bins.edges_m).",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mse.far": {
+      "id": "rgb.depth_binned.mse.far",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Depth-binned MSE (far)",
+      "description": "Photometric MSE over pixels in the fixed 'far' GT-depth bin (rgb.depth_bins.edges_m).",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    }
+  },
+  "reducers": {},
+  "stratificationSchemes": {}
+}

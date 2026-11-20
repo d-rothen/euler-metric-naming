@@ -1,0 +1,60 @@
+{
+  "$schema": "https://github.com/d-rothen/euler-metric-naming/contract/vocabulary-1.schema.json",
+  "id": "euler.sky",
+  "version": "1.0",
+  "title": "Euler sky handling",
+  "description": "GT sky masking, predicted-sky masking and fill, and sky IoU bookkeeping.",
+  "descriptors": {
+    "sky.gt.masking": {
+      "label": "GT sky masking",
+      "role": "definition",
+      "description": "Pixels labelled sky in the GT segmentation are left out of every metric (--mask-sky)."
+    },
+    "sky.gt.missing_policy": {
+      "label": "frames without segmentation",
+      "role": "definition",
+      "default": "drop",
+      "appliesWhen": { "param": "sky.gt.masking", "op": "eq", "value": true },
+      "inertIf": { "observation": "sky.gt.unsegmented", "op": "eq", "value": 0 },
+      "description": "What happens to frames without their own GT segmentation under GT sky masking: drop (left out) or unmasked (scored without masking)."
+    },
+    "sky.gt.unsegmented": {
+      "label": "frames without segmentation",
+      "role": "provenance",
+      "observe": "count",
+      "description": "How many evaluated frames had no GT segmentation of their own."
+    },
+    "sky.pred.masking": {
+      "label": "predicted-sky masking",
+      "role": "definition",
+      "description": "Pixels in the prediction's own sky mask are left out of every metric (--mask-sky-prediction)."
+    },
+    "sky.pred.fill": {
+      "label": "predicted-sky fill",
+      "role": "definition",
+      "appliesWhen": {
+        "any": [
+          { "param": "depth.cap.max_m", "op": "exists" },
+          { "param": "sky.pred.masking", "op": "eq", "value": true }
+        ]
+      },
+      "description": "Whether the prediction's sky mask was loaded and used (filled at the depth cap, or excluded under predicted-sky masking)."
+    },
+    "sky.pred.excluded": {
+      "label": "predicted-sky exclusion",
+      "role": "domain",
+      "compare": "measure",
+      "observe": "fraction",
+      "appliesWhen": { "param": "sky.pred.masking", "op": "eq", "value": true },
+      "description": "Fraction of otherwise valid GT pixels that fell in the prediction's own sky and were excluded."
+    },
+    "sky.iou": {
+      "label": "sky IoU",
+      "role": "provenance",
+      "description": "Whether sky IoU metrics were computed (--sky-iou); adds metrics, changes none."
+    }
+  },
+  "metrics": {},
+  "reducers": {},
+  "stratificationSchemes": {}
+}

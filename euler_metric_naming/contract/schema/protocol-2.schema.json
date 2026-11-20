@@ -1,0 +1,720 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/d-rothen/euler-metric-naming/contract/protocol-2.schema.json",
+  "title": "Evaluation protocol, schema 2",
+  "description": "The protocol block of an evaluation results file (eval.json). docs/contract.md is normative; where it and this schema disagree, the document wins. Unknown properties are allowed everywhere (consumers ignore them); enums are closed only where section 3 of the contract defines a closed set.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "parameters"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^2\\.[0-9]+$"
+    },
+    "task": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "vocabularies": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "parameters": {
+      "$ref": "#/$defs/parameters"
+    },
+    "descriptors": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/descriptor"
+      }
+    },
+    "references": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/reference"
+      }
+    },
+    "observations": {
+      "type": "object"
+    },
+    "population": {
+      "$ref": "#/$defs/population"
+    },
+    "stratifications": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/stratification"
+      }
+    },
+    "reducers": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/reducer"
+      }
+    },
+    "axes": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/axisRole"
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/metricDefinition"
+      }
+    },
+    "items": {
+      "$ref": "#/$defs/items"
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "scalar": {
+      "description": "A v1-compatible parameter scalar (section 2).",
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 1024
+        },
+        {
+          "type": [
+            "number",
+            "boolean",
+            "null"
+          ]
+        }
+      ]
+    },
+    "parameters": {
+      "description": "Flat map of scalars or lists of at most 64 scalars, exactly as in schema 1 (section 2).",
+      "type": "object",
+      "maxProperties": 512,
+      "propertyNames": {
+        "minLength": 1,
+        "maxLength": 255
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/scalar"
+          },
+          {
+            "type": "array",
+            "maxItems": 64,
+            "items": {
+              "$ref": "#/$defs/scalar"
+            }
+          }
+        ]
+      }
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "box": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "number",
+        "minimum": 0
+      },
+      "description": "[top, left, height, width] in source pixels."
+    },
+    "role": {
+      "enum": [
+        "reference",
+        "definition",
+        "population",
+        "domain",
+        "derived",
+        "provenance"
+      ]
+    },
+    "compare": {
+      "enum": [
+        "equal",
+        "measure",
+        "pair",
+        "ignore"
+      ]
+    },
+    "observe": {
+      "enum": [
+        "region",
+        "count",
+        "fraction",
+        "factor",
+        "size"
+      ]
+    },
+    "axisRoleName": {
+      "enum": [
+        "space",
+        "reduction",
+        "stratum",
+        "variant",
+        "family",
+        "stage",
+        "kind"
+      ]
+    },
+    "conditionOp": {
+      "enum": [
+        "exists",
+        "eq",
+        "ne",
+        "lt",
+        "le",
+        "gt",
+        "ge",
+        "in"
+      ]
+    },
+    "condition": {
+      "description": "Section 7. Exactly one of all, any, not, param, observation.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "all"
+          ],
+          "properties": {
+            "all": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "any"
+          ],
+          "properties": {
+            "any": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "not"
+          ],
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/condition"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "param",
+            "op"
+          ],
+          "properties": {
+            "param": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "$ref": "#/$defs/conditionOp"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "observation",
+            "op"
+          ],
+          "properties": {
+            "observation": {
+              "type": "string",
+              "minLength": 1
+            },
+            "op": {
+              "$ref": "#/$defs/conditionOp"
+            }
+          }
+        }
+      ]
+    },
+    "affects": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "axes": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "#/$defs/axisRoleName"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "descriptor": {
+      "type": "object",
+      "required": [
+        "role"
+      ],
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "role": {
+          "$ref": "#/$defs/role"
+        },
+        "compare": {
+          "$ref": "#/$defs/compare"
+        },
+        "observe": {
+          "$ref": "#/$defs/observe"
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "affects": {
+          "$ref": "#/$defs/affects"
+        },
+        "appliesWhen": {
+          "$ref": "#/$defs/condition"
+        },
+        "inertIf": {
+          "$ref": "#/$defs/condition"
+        },
+        "derivedFrom": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "default": true,
+        "hint": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "vocabulary": {
+          "type": "string"
+        }
+      }
+    },
+    "reference": {
+      "type": "object",
+      "required": [
+        "identity"
+      ],
+      "properties": {
+        "modality": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dataset": {
+          "type": "object"
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manifest": {
+          "type": "object",
+          "properties": {
+            "hash": {
+              "$ref": "#/$defs/hash"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "view": {
+          "type": "object",
+          "required": [
+            "source",
+            "region"
+          ],
+          "properties": {
+            "source": {
+              "type": "string"
+            },
+            "region": {
+              "$ref": "#/$defs/box"
+            }
+          }
+        }
+      }
+    },
+    "population": {
+      "type": "object",
+      "properties": {
+        "unit": {
+          "type": "string"
+        },
+        "idScheme": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "manifest": {
+          "$ref": "#/$defs/hash"
+        },
+        "accounting": {
+          "type": "object"
+        }
+      }
+    },
+    "stratification": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "variable": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "edges": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "minItems": 2,
+          "items": {
+            "type": "number"
+          }
+        },
+        "labels": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "closed": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lastClosed": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "total": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "categories": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "after": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "scheme": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "edges",
+            "labels"
+          ]
+        },
+        {
+          "required": [
+            "categories"
+          ]
+        }
+      ]
+    },
+    "reducer": {
+      "type": "object",
+      "required": [
+        "recompute"
+      ],
+      "properties": {
+        "recompute": {
+          "enum": [
+            "mean",
+            "median",
+            "pool",
+            "none"
+          ]
+        },
+        "over": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "vocabulary": {
+          "type": "string"
+        }
+      }
+    },
+    "axisRole": {
+      "type": "object",
+      "required": [
+        "role"
+      ],
+      "properties": {
+        "role": {
+          "$ref": "#/$defs/axisRoleName"
+        },
+        "stratification": {
+          "type": "string"
+        }
+      },
+      "if": {
+        "properties": {
+          "role": {
+            "const": "stratum"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "stratification"
+        ]
+      }
+    },
+    "metricDefinition": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "score",
+            "statistic",
+            "observation"
+          ]
+        },
+        "rev": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "direction": {
+          "enum": [
+            "lower",
+            "higher",
+            "none"
+          ]
+        },
+        "bounds": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "display": {
+          "type": "object",
+          "required": [
+            "scale"
+          ],
+          "properties": {
+            "scale": {
+              "enum": [
+                "relative",
+                "complement",
+                "absolute",
+                "none"
+              ]
+            },
+            "fullAt": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "if": {
+            "properties": {
+              "scale": {
+                "const": "absolute"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "fullAt"
+            ]
+          }
+        },
+        "perItem": {
+          "type": "boolean"
+        },
+        "pool": {
+          "type": "object",
+          "required": [
+            "form"
+          ],
+          "properties": {
+            "form": {
+              "enum": [
+                "mean",
+                "rms",
+                "none"
+              ]
+            },
+            "weight": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "if": {
+            "properties": {
+              "form": {
+                "enum": [
+                  "mean",
+                  "rms"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "weight"
+            ]
+          }
+        },
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vocabulary": {
+          "type": "string"
+        }
+      }
+    },
+    "items": {
+      "type": "object",
+      "required": [
+        "ids"
+      ],
+      "properties": {
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "series": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": [
+                "number",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

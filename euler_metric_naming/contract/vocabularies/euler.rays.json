@@ -1,0 +1,233 @@
+{
+  "$schema": "https://github.com/d-rothen/euler-metric-naming/contract/vocabulary-1.schema.json",
+  "id": "euler.rays",
+  "version": "1.0",
+  "title": "Euler ray-map evaluation",
+  "description": "Camera ray maps: angular error and the FoV-dependent ρ_A score.",
+  "descriptors": {
+    "rays.fov_policy": {
+      "label": "FoV policy",
+      "role": "definition",
+      "affects": {
+        "metrics": [
+          "rho_a*"
+        ]
+      },
+      "description": "Revision of how the FoV domain (sfov, lfov, pano) and its ρ_A threshold are chosen (v1, v2)."
+    },
+    "rays.rho_a.threshold_deg": {
+      "label": "ρ_A threshold",
+      "role": "definition",
+      "unit": "deg",
+      "affects": {
+        "metrics": [
+          "rho_a*"
+        ]
+      },
+      "description": "Angular threshold up to which ρ_A integrates the accuracy curve."
+    }
+  },
+  "metrics": {
+    "rho_a.mean": {
+      "id": "rays.rho_a.mean",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "ρ_A (Mean)",
+      "description": "Mean area under the angular-accuracy curve up to the FoV threshold.",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "rho_a.median": {
+      "id": "rays.rho_a.median",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "ρ_A (Median)",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "angular_error.mean_angle": {
+      "id": "rays.angular_error.mean_angle",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Mean Angular Error",
+      "direction": "lower",
+      "bounds": [
+        0,
+        180
+      ],
+      "unit": "deg",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "angular_error.median_angle": {
+      "id": "rays.angular_error.median_angle",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Median Angular Error",
+      "direction": "lower",
+      "bounds": [
+        0,
+        180
+      ],
+      "unit": "deg",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "angular_error.percent_below_5": {
+      "id": "rays.angular_error.percent_below_5",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "< 5°",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "angular_error.percent_below_10": {
+      "id": "rays.angular_error.percent_below_10",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "< 10°",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "angular_error.percent_below_15": {
+      "id": "rays.angular_error.percent_below_15",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "< 15°",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "angular_error.percent_below_20": {
+      "id": "rays.angular_error.percent_below_20",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "< 20°",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "angular_error.percent_below_30": {
+      "id": "rays.angular_error.percent_below_30",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "< 30°",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    }
+  },
+  "reducers": {},
+  "stratificationSchemes": {}
+}

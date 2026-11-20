@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/d-rothen/euler-metric-naming/contract/vocabulary-1.schema.json",
+  "title": "Evaluation protocol vocabulary, schema 1",
+  "description": "A vocabulary document (docs/contract.md section 5, docs/vocabulary.md): terms producers snapshot into each protocol block. Terms use the protocol-2 definitions; vocabulary terms carry no 'vocabulary' tag of their own (producers add it when they snapshot).",
+  "type": "object",
+  "required": [
+    "id",
+    "version",
+    "descriptors",
+    "metrics",
+    "reducers"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(\\.[a-z0-9_]+)+$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "descriptors": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)+$"
+      },
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "protocol-2.schema.json#/$defs/descriptor"
+          },
+          {
+            "not": {
+              "required": [
+                "vocabulary"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)*$"
+      },
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "protocol-2.schema.json#/$defs/metricDefinition"
+          },
+          {
+            "required": [
+              "id",
+              "kind",
+              "rev",
+              "displayName",
+              "direction"
+            ]
+          },
+          {
+            "not": {
+              "required": [
+                "vocabulary"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "reducers": {
+      "type": "object",
+      "additionalProperties": {
+        "allOf": [
+          {
+            "$ref": "protocol-2.schema.json#/$defs/reducer"
+          },
+          {
+            "not": {
+              "required": [
+                "vocabulary"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "stratificationSchemes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

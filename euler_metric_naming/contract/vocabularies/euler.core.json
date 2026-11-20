@@ -1,0 +1,152 @@
+{
+  "$schema": "https://github.com/d-rothen/euler-metric-naming/contract/vocabulary-1.schema.json",
+  "id": "euler.core",
+  "version": "1.0",
+  "title": "Euler core terms",
+  "description": "Terms every Euler evaluation can use: reference inputs, the scored domain, spatial reconciliation of prediction and GT, and the generic reducers.",
+  "descriptors": {
+    "reference.gt": {
+      "label": "GT",
+      "role": "reference",
+      "description": "The ground truth the prediction is scored against."
+    },
+    "reference.calibration": {
+      "label": "calibration",
+      "role": "reference",
+      "description": "Camera calibration the evaluation reads (intrinsics for normals, radial/planar depth conversion)."
+    },
+    "reference.segmentation": {
+      "label": "GT segmentation",
+      "role": "reference",
+      "appliesWhen": {
+        "any": [
+          { "param": "sky.gt.masking", "op": "eq", "value": true },
+          { "param": "sky.iou", "op": "eq", "value": true }
+        ]
+      },
+      "description": "GT semantic segmentation; read for GT sky masking and sky IoU only."
+    },
+    "reference.intrinsics": {
+      "label": "intrinsics",
+      "role": "reference",
+      "description": "Per-frame camera intrinsics (sparse lidar projection, point maps)."
+    },
+    "reference.camera_extrinsics": {
+      "label": "camera extrinsics",
+      "role": "reference",
+      "description": "Camera poses used to project sparse GT."
+    },
+    "reference.lidar_extrinsics": {
+      "label": "lidar extrinsics",
+      "role": "reference",
+      "description": "Lidar-to-camera transforms used to project sparse GT."
+    },
+    "reference.input": {
+      "label": "input image",
+      "role": "reference",
+      "description": "The (degraded) RGB input the prediction restores; the reference of input-referenced metrics."
+    },
+    "reference.depth": {
+      "label": "GT depth",
+      "role": "reference",
+      "description": "GT depth an RGB evaluation reads for its depth-binned metrics."
+    },
+    "domain.region": {
+      "label": "domain",
+      "role": "domain",
+      "compare": "measure",
+      "observe": "region",
+      "unit": "px",
+      "description": "The region of the source frame that was scored, as {frame, box: [top, left, height, width]} in source pixels."
+    },
+    "domain.grid": {
+      "label": "evaluated grid",
+      "role": "domain",
+      "compare": "measure",
+      "observe": "size",
+      "unit": "px",
+      "description": "[height, width] of the grid the metrics were computed on."
+    },
+    "prediction.resample": {
+      "label": "prediction resampled",
+      "role": "domain",
+      "compare": "measure",
+      "observe": "factor",
+      "default": [1, 1],
+      "description": "Factor [height, width] by which the prediction was resampled onto the evaluated grid (target / source); [1, 1] when it was not."
+    },
+    "spatial.gt_resample": {
+      "label": "GT resampled",
+      "role": "definition",
+      "compare": "equal",
+      "default": [1, 1],
+      "description": "Factor [height, width] by which the GT was resampled onto the prediction grid (target / source); [1, 1] when it was not. Resampled GT is different GT."
+    },
+    "spatial.method": {
+      "label": "spatial alignment",
+      "role": "derived",
+      "derivedFrom": ["prediction.resample", "spatial.gt_resample", "domain.region", "domain.grid"],
+      "description": "How prediction and GT resolutions were reconciled (none, crop, vae_crop, resize_prediction, resize, warp_prediction, warp, pointcloud_projection). Compared through the keys it is derived from."
+    },
+    "spatial.policy": {
+      "label": "spatial alignment policy",
+      "role": "provenance",
+      "description": "The configured policy that chose the spatial method (e.g. auto, crop, resize, source_grid)."
+    },
+    "spatial.resize_target": {
+      "label": "resize target",
+      "role": "definition",
+      "appliesWhen": {
+        "param": "spatial.method",
+        "op": "in",
+        "value": ["resize_prediction", "warp_prediction", "resize", "warp"]
+      },
+      "description": "Which grid is resampled when resolutions differ and the prediction is not a crop: gt_grid (prediction onto GT) or prediction_grid (GT onto prediction)."
+    },
+    "spatial.mask_resample": {
+      "label": "mask resampling",
+      "role": "definition",
+      "appliesWhen": {
+        "any": [
+          { "param": "sky.gt.masking", "op": "eq", "value": true },
+          { "param": "sky.pred.masking", "op": "eq", "value": true },
+          { "param": "sky.pred.fill", "op": "eq", "value": true }
+        ]
+      },
+      "description": "Interpolation used to resample masks (nearest, nearest_exact)."
+    },
+    "core.seed": {
+      "label": "seed",
+      "role": "provenance",
+      "description": "Random seed of stochastic parts of the evaluation."
+    }
+  },
+  "metrics": {},
+  "reducers": {
+    "image_mean": {
+      "recompute": "mean",
+      "over": "item",
+      "label": "image mean",
+      "description": "Arithmetic mean of the per-image values."
+    },
+    "image_median": {
+      "recompute": "median",
+      "over": "item",
+      "label": "image median",
+      "description": "Median of the per-image values."
+    },
+    "pixel_pool": {
+      "recompute": "pool",
+      "over": "observation",
+      "label": "pixel pool",
+      "description": "Every valid pixel of every image pooled into one population; recomputed from per-image values with the metric's pool form and weight."
+    },
+    "dataset": {
+      "recompute": "none",
+      "over": "dataset",
+      "label": "dataset",
+      "description": "A dataset-level statistic that cannot be recomputed from per-item values (e.g. FID)."
+    }
+  },
+  "stratificationSchemes": {}
+}

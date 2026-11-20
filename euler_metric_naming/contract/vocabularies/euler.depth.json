@@ -1,0 +1,938 @@
+{
+  "$schema": "https://github.com/d-rothen/euler-metric-naming/contract/vocabulary-1.schema.json",
+  "id": "euler.depth",
+  "version": "1.0",
+  "title": "Euler depth evaluation",
+  "description": "Dense and sparse depth: alignment, depth cap, invalid values, benchmark bins and the depth metrics.",
+  "descriptors": {
+    "depth.alignment.mode": {
+      "label": "depth alignment mode",
+      "role": "provenance",
+      "description": "Configured alignment mode (none, auto_affine, affine); whether a fit ran is depth.alignment.applied."
+    },
+    "depth.alignment.applied": {
+      "label": "depth alignment applied",
+      "role": "definition",
+      "affects": {
+        "axes": {
+          "space": [
+            "metric"
+          ]
+        }
+      },
+      "hint": "compare the native space, or two fitted runs",
+      "description": "Whether a scale/shift fit to the GT produced the metric space."
+    },
+    "depth.alignment.fit": {
+      "label": "depth alignment fit",
+      "role": "definition",
+      "appliesWhen": {
+        "param": "depth.alignment.applied",
+        "op": "eq",
+        "value": true
+      },
+      "affects": {
+        "axes": {
+          "space": [
+            "metric"
+          ]
+        }
+      },
+      "description": "The fitted model (e.g. scale, scale_shift, scale_shift_inverse)."
+    },
+    "depth.alignment.fit_trim": {
+      "label": "depth alignment trim",
+      "role": "definition",
+      "appliesWhen": {
+        "param": "depth.alignment.applied",
+        "op": "eq",
+        "value": true
+      },
+      "affects": {
+        "axes": {
+          "space": [
+            "metric"
+          ]
+        }
+      },
+      "description": "Fraction of largest residuals excluded from the fit."
+    },
+    "depth.input_space": {
+      "label": "input depth space",
+      "role": "provenance",
+      "description": "Detected space of the prediction (metric, relative, affine)."
+    },
+    "depth.cap.max_m": {
+      "label": "depth cap",
+      "role": "definition",
+      "unit": "m",
+      "inertIf": {
+        "observation": "depth.cap.clipped",
+        "op": "eq",
+        "value": 0
+      },
+      "description": "Predictions (and filled predicted sky) are clipped at this depth; inert when nothing was clipped."
+    },
+    "depth.cap.clipped": {
+      "label": "clipped by depth cap",
+      "role": "provenance",
+      "observe": "fraction",
+      "description": "Fraction of scored pixels whose prediction the depth cap changed."
+    },
+    "depth.benchmark.range_m": {
+      "label": "benchmark depth range",
+      "role": "derived",
+      "unit": "m",
+      "derivedFrom": [],
+      "description": "[min, max] GT depth of the benchmark bins; compared through the stratification it defines."
+    },
+    "depth.invalid.policy": {
+      "label": "invalid-value policy",
+      "role": "definition",
+      "description": "How declared invalid sentinels are treated: exclude_sentinel (not scored) or score_sentinel."
+    },
+    "depth.conversion": {
+      "label": "depth conversion",
+      "role": "definition",
+      "description": "Conversion applied before scoring (none, radial_to_planar, planar_to_radial)."
+    }
+  },
+  "metrics": {
+    "absrel": {
+      "id": "depth.absrel",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "AbsRel",
+      "description": "Mean absolute relative error |d - d*| / d* over valid pixels.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "mean",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "sqrel": {
+      "id": "depth.sqrel",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "SqRel",
+      "description": "Mean squared relative error (d - d*)^2 / d*.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "mean",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "mae": {
+      "id": "depth.mae",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "MAE",
+      "description": "Mean absolute error in meters.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "mean",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "rmse": {
+      "id": "depth.rmse",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "RMSE",
+      "description": "Root mean squared error in meters.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "rms",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "rmse_log": {
+      "id": "depth.rmse_log",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "RMSE Log",
+      "description": "Root mean squared error of log depth.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "rms",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "log10": {
+      "id": "depth.log10",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Log10 Error",
+      "description": "Mean absolute error of log10 depth.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "mean",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "silog": {
+      "id": "depth.silog",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "SILog",
+      "description": "Scale-invariant log error; its pooled value is not a weighted mean of per-image values.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "delta1": {
+      "id": "depth.delta1",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "δ < 1.25",
+      "description": "Fraction of pixels with max(d/d*, d*/d) < 1.25.",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "mean",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "delta2": {
+      "id": "depth.delta2",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "δ < 1.25²",
+      "description": "Fraction of pixels with max(d/d*, d*/d) < 1.25².",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "mean",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "delta3": {
+      "id": "depth.delta3",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "δ < 1.25³",
+      "description": "Fraction of pixels with max(d/d*, d*/d) < 1.25³.",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "mean",
+        "weight": "count"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "count": {
+      "id": "depth.count",
+      "kind": "statistic",
+      "rev": 1,
+      "displayName": "valid pixels",
+      "description": "Valid pixels scored per image; the weight of pooled standard metrics.",
+      "direction": "none",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "px",
+      "display": {
+        "scale": "none"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "psnr": {
+      "id": "depth.psnr",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "PSNR",
+      "description": "PSNR of the normalized depth map.",
+      "direction": "higher",
+      "bounds": [
+        null,
+        null
+      ],
+      "unit": "dB",
+      "display": {
+        "scale": "absolute",
+        "fullAt": 2,
+        "unit": "dB"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "ssim": {
+      "id": "depth.ssim",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "SSIM",
+      "description": "SSIM of the normalized depth map.",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "lpips": {
+      "id": "depth.lpips",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "LPIPS",
+      "description": "LPIPS of the normalized depth map.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "fid": {
+      "id": "depth.fid",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "FID",
+      "description": "Fréchet Inception Distance of the depth-map distributions; dataset-level.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "kid_mean": {
+      "id": "depth.kid_mean",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "KID Mean",
+      "description": "Kernel Inception Distance mean; dataset-level.",
+      "direction": "lower",
+      "bounds": [
+        null,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "kid_std": {
+      "id": "depth.kid_std",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "KID Std",
+      "description": "Kernel Inception Distance standard deviation; dataset-level.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "absrel.median": {
+      "id": "depth.absrel.median",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "AbsRel (Median)",
+      "description": "Median of the pooled per-pixel absolute relative errors.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "absrel.p90": {
+      "id": "depth.absrel.p90",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "AbsRel (P90)",
+      "description": "90th percentile of the pooled per-pixel absolute relative errors.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "rmse.median": {
+      "id": "depth.rmse.median",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "RMSE (Median)",
+      "description": "Median of the pooled per-pixel absolute errors.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "rmse.p90": {
+      "id": "depth.rmse.p90",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "RMSE (P90)",
+      "description": "90th percentile of the pooled per-pixel absolute errors.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "m",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "silog.mean": {
+      "id": "depth.silog.mean",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "SILog (Mean)",
+      "description": "Mean of per-image SILog.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "silog.median": {
+      "id": "depth.silog.median",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "SILog (Median)",
+      "description": "Median of per-image SILog.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "silog.p90": {
+      "id": "depth.silog.p90",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "SILog (P90)",
+      "description": "90th percentile of per-image SILog.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "normal_consistency.mean_angle": {
+      "id": "depth.normal_consistency.mean_angle",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Normal Mean Angle",
+      "direction": "lower",
+      "bounds": [
+        0,
+        180
+      ],
+      "unit": "deg",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "normal_consistency.median_angle": {
+      "id": "depth.normal_consistency.median_angle",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Normal Median Angle",
+      "direction": "lower",
+      "bounds": [
+        0,
+        180
+      ],
+      "unit": "deg",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "normal_consistency.percent_below_11_25": {
+      "id": "depth.normal_consistency.percent_below_11_25",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Normal < 11.25°",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "normal_consistency.percent_below_22_5": {
+      "id": "depth.normal_consistency.percent_below_22_5",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Normal < 22.5°",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "normal_consistency.percent_below_30": {
+      "id": "depth.normal_consistency.percent_below_30",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Normal < 30°",
+      "direction": "higher",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "depth_edge_f1.precision": {
+      "id": "depth.depth_edge_f1.precision",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Edge Precision",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "depth_edge_f1.recall": {
+      "id": "depth.depth_edge_f1.recall",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Edge Recall",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "depth_edge_f1.f1": {
+      "id": "depth.depth_edge_f1.f1",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Edge F1",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "iou": {
+      "id": "depth.sky.iou",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Sky IoU",
+      "description": "IoU of predicted sky against GT sky segmentation.",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "precision": {
+      "id": "depth.sky.precision",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Sky Precision",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "recall": {
+      "id": "depth.sky.recall",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Sky Recall",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "valid_pixel_count": {
+      "id": "depth.valid_pixel_count",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Valid Pixel Count",
+      "description": "Valid GT points scored (sparse depth).",
+      "direction": "none",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "px",
+      "display": {
+        "scale": "none"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    }
+  },
+  "reducers": {},
+  "stratificationSchemes": {
+    "sqrt_equal_width": {
+      "label": "square-root equal width",
+      "description": "n bins of equal width in sqrt(depth) between lo and hi: e_0 = lo, e_n = hi, e_i = r * r with r = sqrt(lo) + i * (sqrt(hi) - sqrt(lo)) / n, in IEEE double arithmetic. Leans range into near bins and stays well-behaved as lo approaches 0."
+    }
+  }
+}

@@ -1,0 +1,517 @@
+{
+  "$comment": "Frozen adapter from protocol schema 1.x (euler-eval <= 2.47) to the v2 contract. docs/contract.md section 10. Never edit in place: a change is a new table version.",
+  "id": "euler.legacy.protocol-1",
+  "version": "1.0",
+  "sourceSchemaMajor": 1,
+  "targetSchemaVersion": "2.0",
+  "references": {
+    "prefix": "reference.",
+    "fields": [
+      "dataset",
+      "scope",
+      "split"
+    ],
+    "modalityField": "modality",
+    "roleRenames": {
+      "input_rgb": "input"
+    }
+  },
+  "population": {
+    "count": "population.samples"
+  },
+  "parameters": {
+    "population.gt_sky_masking": "sky.gt.masking",
+    "population.missing_segmentation": "sky.gt.missing_policy",
+    "population.pred_sky_masking": "sky.pred.masking",
+    "method.depth_alignment": "depth.alignment.mode",
+    "method.sky_depth_m": "depth.cap.max_m",
+    "method.pred_sky_mask": "sky.pred.fill",
+    "method.spatial_alignment": "spatial.method",
+    "method.fid_backend": "rgb.fid.backend",
+    "method.input_alignment": "rgb.input.alignment",
+    "method.points_3d_alignment": "points3d.alignment.mode"
+  },
+  "observations": {
+    "population.evaluated_resolution": "domain.grid"
+  },
+  "applied": {
+    "method.depth_alignment": "depth.alignment.applied",
+    "method.points_3d_alignment": "points3d.alignment.applied"
+  },
+  "appliedFrom": "calibration_applied",
+  "benchmark": {
+    "key": "population.benchmark_depth_range_m",
+    "parameter": "depth.benchmark.range_m",
+    "stratification": "depth.gt_range",
+    "template": {
+      "label": "GT depth",
+      "variable": "gt_depth_m",
+      "unit": "m",
+      "labels": [
+        "near",
+        "mid",
+        "far"
+      ],
+      "closed": "left",
+      "lastClosed": true,
+      "total": "all",
+      "after": [
+        "depth.cap.max_m"
+      ],
+      "scheme": "sqrt_equal_width"
+    },
+    "boundariesFrom": "benchmark.boundaries"
+  },
+  "revision": {
+    "key": "method.metrics_revision",
+    "lastKnown": 4,
+    "beyondKey": "legacy.metrics_revision",
+    "policies": {
+      "spatial.resize_target": [
+        [
+          1,
+          "prediction_grid"
+        ],
+        [
+          2,
+          "gt_grid"
+        ]
+      ],
+      "spatial.mask_resample": [
+        [
+          1,
+          "nearest"
+        ],
+        [
+          2,
+          "nearest_exact"
+        ]
+      ],
+      "rgb.depth_bins.policy": [
+        [
+          1,
+          "v1"
+        ],
+        [
+          2,
+          "v2"
+        ]
+      ],
+      "rays.fov_policy": [
+        [
+          1,
+          "v1"
+        ],
+        [
+          2,
+          "v2"
+        ]
+      ],
+      "depth.invalid.policy": [
+        [
+          1,
+          "score_sentinel"
+        ],
+        [
+          3,
+          "exclude_sentinel"
+        ]
+      ],
+      "rgb.input.alignment_policy": [
+        [
+          1,
+          "upscale"
+        ],
+        [
+          4,
+          "follow_gt"
+        ]
+      ]
+    }
+  },
+  "resample": {
+    "key": "method.spatial_alignment",
+    "prediction": {
+      "methods": [
+        "resize_prediction",
+        "warp_prediction"
+      ],
+      "observation": "prediction.resample"
+    },
+    "gt": {
+      "methods": [
+        "resize",
+        "warp"
+      ],
+      "parameter": "spatial.gt_resample"
+    }
+  },
+  "axisRoles": {
+    "space": {
+      "role": "space"
+    },
+    "category": {
+      "role": "family"
+    },
+    "reduction": {
+      "role": "reduction"
+    },
+    "bin": {
+      "role": "stratum",
+      "stratification": "depth.gt_range"
+    },
+    "variant": {
+      "role": "variant"
+    }
+  },
+  "reducers": {
+    "image_mean": {
+      "recompute": "mean",
+      "over": "item",
+      "label": "image mean",
+      "description": "Arithmetic mean of the per-image values.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "image_median": {
+      "recompute": "median",
+      "over": "item",
+      "label": "image median",
+      "description": "Median of the per-image values.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "pixel_pool": {
+      "recompute": "none",
+      "over": "observation",
+      "label": "pixel pool",
+      "description": "Pixel pool of a v1 file: v1 records no per-item weights, so it cannot be recomputed.",
+      "vocabulary": "euler.core@1.0"
+    }
+  },
+  "descriptors": {
+    "reference.gt": {
+      "label": "GT",
+      "role": "reference",
+      "description": "The ground truth the prediction is scored against.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "reference.calibration": {
+      "label": "calibration",
+      "role": "reference",
+      "description": "Camera calibration the evaluation reads (intrinsics for normals, radial/planar depth conversion).",
+      "vocabulary": "euler.core@1.0"
+    },
+    "reference.segmentation": {
+      "label": "GT segmentation",
+      "role": "reference",
+      "appliesWhen": {
+        "any": [
+          {
+            "param": "sky.gt.masking",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "param": "sky.iou",
+            "op": "eq",
+            "value": true
+          }
+        ]
+      },
+      "description": "GT semantic segmentation; read for GT sky masking and sky IoU only.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "reference.intrinsics": {
+      "label": "intrinsics",
+      "role": "reference",
+      "description": "Per-frame camera intrinsics (sparse lidar projection, point maps).",
+      "vocabulary": "euler.core@1.0"
+    },
+    "reference.camera_extrinsics": {
+      "label": "camera extrinsics",
+      "role": "reference",
+      "description": "Camera poses used to project sparse GT.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "reference.lidar_extrinsics": {
+      "label": "lidar extrinsics",
+      "role": "reference",
+      "description": "Lidar-to-camera transforms used to project sparse GT.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "reference.input": {
+      "label": "input image",
+      "role": "reference",
+      "description": "The (degraded) RGB input the prediction restores; the reference of input-referenced metrics.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "reference.depth": {
+      "label": "GT depth",
+      "role": "reference",
+      "description": "GT depth an RGB evaluation reads for its depth-binned metrics.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "sky.gt.masking": {
+      "label": "GT sky masking",
+      "role": "definition",
+      "description": "Pixels labelled sky in the GT segmentation are left out of every metric (--mask-sky).",
+      "vocabulary": "euler.sky@1.0"
+    },
+    "sky.gt.missing_policy": {
+      "label": "frames without segmentation",
+      "role": "definition",
+      "default": "drop",
+      "appliesWhen": {
+        "param": "sky.gt.masking",
+        "op": "eq",
+        "value": true
+      },
+      "inertIf": {
+        "observation": "sky.gt.unsegmented",
+        "op": "eq",
+        "value": 0
+      },
+      "description": "What happens to frames without their own GT segmentation under GT sky masking: drop (left out) or unmasked (scored without masking).",
+      "vocabulary": "euler.sky@1.0"
+    },
+    "sky.pred.masking": {
+      "label": "predicted-sky masking",
+      "role": "definition",
+      "description": "Pixels in the prediction's own sky mask are left out of every metric (--mask-sky-prediction).",
+      "vocabulary": "euler.sky@1.0"
+    },
+    "sky.pred.fill": {
+      "label": "predicted-sky fill",
+      "role": "definition",
+      "appliesWhen": {
+        "any": [
+          {
+            "param": "depth.cap.max_m",
+            "op": "exists"
+          },
+          {
+            "param": "sky.pred.masking",
+            "op": "eq",
+            "value": true
+          }
+        ]
+      },
+      "description": "Whether the prediction's sky mask was loaded and used (filled at the depth cap, or excluded under predicted-sky masking).",
+      "vocabulary": "euler.sky@1.0"
+    },
+    "domain.grid": {
+      "label": "evaluated grid",
+      "role": "domain",
+      "compare": "measure",
+      "observe": "size",
+      "unit": "px",
+      "description": "[height, width] of the grid the metrics were computed on.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "prediction.resample": {
+      "label": "prediction resampled",
+      "role": "domain",
+      "compare": "measure",
+      "observe": "factor",
+      "default": [
+        1,
+        1
+      ],
+      "description": "Factor [height, width] by which the prediction was resampled onto the evaluated grid (target / source); [1, 1] when it was not.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "spatial.gt_resample": {
+      "label": "GT resampled",
+      "role": "definition",
+      "compare": "equal",
+      "default": [
+        1,
+        1
+      ],
+      "description": "Factor [height, width] by which the GT was resampled onto the prediction grid (target / source); [1, 1] when it was not. Resampled GT is different GT.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "spatial.method": {
+      "label": "spatial alignment",
+      "role": "derived",
+      "derivedFrom": [
+        "prediction.resample",
+        "spatial.gt_resample",
+        "domain.region",
+        "domain.grid"
+      ],
+      "description": "How prediction and GT resolutions were reconciled (none, crop, vae_crop, resize_prediction, resize, warp_prediction, warp, pointcloud_projection). Compared through the keys it is derived from.",
+      "vocabulary": "euler.core@1.0"
+    },
+    "spatial.resize_target": {
+      "label": "resize target",
+      "role": "definition",
+      "appliesWhen": {
+        "param": "spatial.method",
+        "op": "in",
+        "value": [
+          "resize_prediction",
+          "warp_prediction",
+          "resize",
+          "warp"
+        ]
+      },
+      "description": "Which grid is resampled when resolutions differ and the prediction is not a crop: gt_grid (prediction onto GT) or prediction_grid (GT onto prediction).",
+      "vocabulary": "euler.core@1.0"
+    },
+    "spatial.mask_resample": {
+      "label": "mask resampling",
+      "role": "definition",
+      "appliesWhen": {
+        "any": [
+          {
+            "param": "sky.gt.masking",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "param": "sky.pred.masking",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "param": "sky.pred.fill",
+            "op": "eq",
+            "value": true
+          }
+        ]
+      },
+      "description": "Interpolation used to resample masks (nearest, nearest_exact).",
+      "vocabulary": "euler.core@1.0"
+    },
+    "depth.benchmark.range_m": {
+      "label": "benchmark depth range",
+      "role": "derived",
+      "unit": "m",
+      "derivedFrom": [],
+      "description": "[min, max] GT depth of the benchmark bins; compared through the stratification it defines.",
+      "vocabulary": "euler.depth@1.0"
+    },
+    "depth.alignment.mode": {
+      "label": "depth alignment mode",
+      "role": "provenance",
+      "description": "Configured alignment mode (none, auto_affine, affine); whether a fit ran is depth.alignment.applied.",
+      "vocabulary": "euler.depth@1.0"
+    },
+    "depth.alignment.applied": {
+      "label": "depth alignment applied",
+      "role": "definition",
+      "affects": {
+        "axes": {
+          "space": [
+            "metric"
+          ]
+        }
+      },
+      "hint": "compare the native space, or two fitted runs",
+      "description": "Whether a scale/shift fit to the GT produced the metric space.",
+      "vocabulary": "euler.depth@1.0"
+    },
+    "depth.cap.max_m": {
+      "label": "depth cap",
+      "role": "definition",
+      "unit": "m",
+      "inertIf": {
+        "observation": "depth.cap.clipped",
+        "op": "eq",
+        "value": 0
+      },
+      "description": "Predictions (and filled predicted sky) are clipped at this depth; inert when nothing was clipped.",
+      "vocabulary": "euler.depth@1.0"
+    },
+    "depth.invalid.policy": {
+      "label": "invalid-value policy",
+      "role": "definition",
+      "description": "How declared invalid sentinels are treated: exclude_sentinel (not scored) or score_sentinel.",
+      "vocabulary": "euler.depth@1.0"
+    },
+    "rgb.fid.backend": {
+      "label": "FID backend",
+      "role": "definition",
+      "affects": {
+        "metrics": [
+          "fid",
+          "kid*"
+        ]
+      },
+      "description": "Inception feature backend of FID/KID (builtin, clean-fid).",
+      "vocabulary": "euler.rgb@1.0"
+    },
+    "rgb.input.alignment": {
+      "label": "input alignment",
+      "role": "definition",
+      "affects": {
+        "metrics": [
+          "hautiere_*"
+        ]
+      },
+      "description": "How the input was put on the prediction grid (none, crop_input, upscale_input, upscale_prediction, warp_input).",
+      "vocabulary": "euler.rgb@1.0"
+    },
+    "rgb.input.alignment_policy": {
+      "label": "input alignment policy",
+      "role": "definition",
+      "affects": {
+        "metrics": [
+          "hautiere_*"
+        ]
+      },
+      "description": "Rule choosing the input alignment: upscale (always upscale the smaller side) or follow_gt (crop when the prediction is a crop).",
+      "vocabulary": "euler.rgb@1.0"
+    },
+    "rgb.depth_bins.policy": {
+      "label": "depth-bin policy",
+      "role": "definition",
+      "affects": {
+        "axes": {
+          "family": [
+            "depth_binned_photometric"
+          ]
+        }
+      },
+      "description": "Revision of how GT depth is put on the RGB grid for depth-binned photometric metrics (v1, v2).",
+      "vocabulary": "euler.rgb@1.0"
+    },
+    "rays.fov_policy": {
+      "label": "FoV policy",
+      "role": "definition",
+      "affects": {
+        "metrics": [
+          "rho_a*"
+        ]
+      },
+      "description": "Revision of how the FoV domain (sfov, lfov, pano) and its ρ_A threshold are chosen (v1, v2).",
+      "vocabulary": "euler.rays@1.0"
+    },
+    "points3d.alignment.mode": {
+      "label": "point-map alignment mode",
+      "role": "provenance",
+      "description": "Configured gauge alignment (none, scale, similarity, auto).",
+      "vocabulary": "euler.points3d@1.0"
+    },
+    "points3d.alignment.applied": {
+      "label": "point-map alignment applied",
+      "role": "definition",
+      "affects": {
+        "axes": {
+          "space": [
+            "metric"
+          ]
+        }
+      },
+      "hint": "compare the native space, or two aligned runs",
+      "description": "Whether a gauge alignment produced the metric space (auto that resolved to none counts as not applied).",
+      "vocabulary": "euler.points3d@1.0"
+    },
+    "legacy.metrics_revision": {
+      "label": "metrics revision",
+      "role": "definition",
+      "description": "A v1 method.metrics_revision newer than this table knows; compared strictly.",
+      "vocabulary": "euler.legacy@1.0"
+    }
+  }
+}
