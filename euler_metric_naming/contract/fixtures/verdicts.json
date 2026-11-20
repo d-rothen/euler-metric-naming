@@ -290,7 +290,7 @@
       "name": "synthetic modality: SNR edges, total bin",
       "a": "s1.json", "b": "s5.json",
       "metric": "audio.eval.clip_mean.all.sisdr",
-      "tier": "incomparable", "label": "not comparable · bins differ (all 0–40 dB vs 0–40 dB)",
+      "tier": "incomparable", "label": "not comparable · bins differ (all: edges [0, 10, 20, 40] dB vs [0, 5, 20, 40] dB)",
       "codes": ["stratification"], "shared": null
     },
     {

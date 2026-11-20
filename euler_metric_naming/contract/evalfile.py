@@ -14,10 +14,10 @@ import unicodedata
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Optional, Union
 
-from ..axes import AxisDeclaration
 from ._json import is_number
 from .closed import ITEM_ID_SEPARATOR
 from .hashing import manifest_hash
+from .legacy import axis_declarations
 from .normalize import normalize
 
 #: Top-level keys that are not metric roots (as euler-view's importer).
@@ -150,12 +150,7 @@ def load_eval_file(source: Union[str, os.PathLike, Mapping[str, Any]]) -> EvalFi
     protocol = raw.get("protocol") if isinstance(raw.get("protocol"), dict) else None
     contract = normalize(protocol, metric_set, raw.get("meta"))
     namespace = contract["metricSet"]["metricNamespace"]
-    axes = {}
-    for name, declaration in contract["metricSet"]["axes"].items():
-        try:
-            axes[name] = AxisDeclaration.from_dict(declaration)
-        except (KeyError, TypeError, ValueError):
-            continue
+    axes = axis_declarations(contract["metricSet"]["axes"]) or {}
     per_file = flatten_per_file(raw.get("per_file_metrics"))
     items = contract.get("items") if isinstance(contract.get("items"), dict) else {}
     series = items.get("series") if isinstance(items.get("series"), dict) else {}

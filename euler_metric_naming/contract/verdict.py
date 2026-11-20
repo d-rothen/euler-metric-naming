@@ -10,7 +10,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Collection, Mapping, Optional
 
-from ..axes import AxisDeclaration, decompose
+from ..axes import decompose
 from ._json import MISSING, is_number, json_equal
 from .closed import AXIS_ROLES, SUPPORTED_MAJORS, TIERS
 from .descriptors import Cell, MergedDescriptor, merge_descriptors
@@ -18,6 +18,7 @@ from .evalfile import EvalFile, file_evidence
 from .globs import glob_any
 from .hashing import valid_rev
 from .jcs import format_number
+from .legacy import axis_declarations
 from .measures import format_sig3, measure, phrase
 from .normalize import schema_major
 from .strata import bin_range, identity_projection
@@ -123,12 +124,9 @@ def _decompose_cell(contract: Mapping[str, Any], name: str) -> Optional[_Side]:
     namespace = info.get("metricNamespace")
     if not isinstance(namespace, str):
         return None
-    declarations = {}
-    for axis_name, declaration in _record(info.get("axes")).items():
-        try:
-            declarations[axis_name] = AxisDeclaration.from_dict(declaration)
-        except (KeyError, TypeError, ValueError, AttributeError):
-            return None
+    declarations = axis_declarations(info.get("axes"))
+    if declarations is None:
+        return None
     try:
         parsed = decompose(name, namespace, declarations)
     except (ValueError, TypeError):
@@ -157,10 +155,7 @@ def per_item_name(contract: Mapping[str, Any], name: str) -> Optional[str]:
 
 def _per_item(side: _Side, base: str) -> str:
     info = _record(side.contract.get("metricSet"))
-    declarations = {
-        axis_name: AxisDeclaration.from_dict(declaration)
-        for axis_name, declaration in _record(info.get("axes")).items()
-    }
+    declarations = axis_declarations(info.get("axes")) or {}
     parsed = decompose(side.cell.name, info["metricNamespace"], declarations)
     reduction_axes = set(side.axes_by_role.get("reduction", ())[:1])
     parts = [info["metricNamespace"]]
@@ -374,19 +369,34 @@ def _stratum_reasons(a: Mapping, b: Mapping, axis_a: str, axis_b: str, value: st
         return [Reason("incomparable", "not_recorded", label, "bins not recorded", step=STEP_STRATIFICATION)]
     if json_equal(identity_projection(strat_a), identity_projection(strat_b)):
         return []
+    return [Reason("incomparable", "stratification", label, _bins_text(strat_a, strat_b, value),
+                   step=STEP_STRATIFICATION)]
+
+
+def _bins_text(strat_a: dict, strat_b: dict, value: str) -> str:
+    """The ``bins differ`` phrase of §8.3."""
     range_a, range_b = bin_range(strat_a, value), bin_range(strat_b, value)
     if range_a is None or range_b is None:
-        text = f"bins differ ({value})"
-    else:
-        text = f"bins differ ({value} {_range_text(range_a, strat_a)} vs {_range_text(range_b, strat_b)})"
-    return [Reason("incomparable", "stratification", label, text, step=STEP_STRATIFICATION)]
+        return f"bins differ ({value})"
+    text_a = _with_unit(f"{format_sig3(range_a[0])}–{format_sig3(range_a[1])}", strat_a)
+    text_b = _with_unit(f"{format_sig3(range_b[0])}–{format_sig3(range_b[1])}", strat_b)
+    if text_a != text_b:
+        return f"bins differ ({value} {text_a} vs {text_b})"
+    edges_a = _with_unit(_edges_text(strat_a), strat_a)
+    edges_b = _with_unit(_edges_text(strat_b), strat_b)
+    if edges_a != edges_b:
+        return f"bins differ ({value}: edges {edges_a} vs {edges_b})"
+    return f"bins differ ({value})"
 
 
-def _range_text(bounds: tuple, stratification: dict) -> str:
-    text = f"{format_sig3(bounds[0])}–{format_sig3(bounds[1])}"
+def _edges_text(stratification: dict) -> str:
+    return "[" + ", ".join(format_sig3(edge) for edge in stratification["edges"]) + "]"
+
+
+def _with_unit(text: str, stratification: dict) -> str:
     unit = stratification.get("unit")
     if isinstance(unit, str) and unit:
-        text += f" {unit}"
+        return f"{text} {unit}"
     return text
 
 

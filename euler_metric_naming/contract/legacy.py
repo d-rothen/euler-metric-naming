@@ -44,6 +44,32 @@ def metric_set_info(metric_set: Any) -> dict:
     }
 
 
+def axis_declarations(raw: Any) -> Optional[dict]:
+    """Parse metricSet axis declarations from untrusted JSON; None when malformed."""
+    from ..axes import AxisDeclaration
+
+    if not isinstance(raw, Mapping):
+        return None
+    out = {}
+    for name, declaration in raw.items():
+        if not isinstance(declaration, Mapping):
+            return None
+        position = declaration.get("position")
+        values = declaration.get("values")
+        if not (is_number(position) and float(position).is_integer()):
+            return None
+        if not (isinstance(values, list) and all(isinstance(v, str) for v in values)):
+            return None
+        description = declaration.get("description")
+        out[name] = AxisDeclaration(
+            position=int(position),
+            values=tuple(values),
+            optional=declaration.get("optional") is True,
+            description=description if isinstance(description, str) else None,
+        )
+    return out
+
+
 def empty_contract(schema_version: Any) -> dict:
     """A contract with every block present and empty."""
     return {
