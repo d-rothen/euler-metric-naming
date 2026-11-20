@@ -32,10 +32,11 @@ validated by
 |---|---|
 | `euler.core` | reference roles (`reference.gt`, `reference.calibration`, …), the scored domain (`domain.region`, `domain.grid`), resampling (`prediction.resample`, `spatial.*`), `core.seed`, the generic reducers |
 | `euler.sky` | GT sky masking, predicted-sky masking / fill / exclusion, sky IoU |
-| `euler.depth` | alignment, depth cap, invalid values, conversion, benchmark range, the depth metrics and the `count` statistic |
+| `euler.depth` | alignment, depth cap, invalid values, conversion, benchmark range, the GT validity range and extra validity mask of in-training validation (1.1), the depth metrics and the `count` statistic |
 | `euler.rgb` | FID backend, input alignment, depth-binned photometric settings, RGB metrics |
 | `euler.rays` | FoV policy, ρ_A threshold, ray metrics |
 | `euler.points3d` | gauge alignment, F_A threshold, point-map metrics |
+| `euler.train` | training telemetry, not evaluation metrics (`"context": "train"`): `lr`, `grad_norm` and the GPU values euler-train records ([training.md](training.md) §2.6) |
 
 Terms in a vocabulary carry no `vocabulary` field; when a producer copies a
 term it adds `"vocabulary": "<id>@<version>"`. `ProtocolBuilder` does this
@@ -45,13 +46,17 @@ for you:
 from euler_metric_naming.contract import ProtocolBuilder
 
 builder = ProtocolBuilder("depth.dense", ["euler.core", "euler.sky", "euler.depth"])
-builder.param("depth.cap.max_m", 38)          # descriptor copied from euler.depth@1.0
+builder.param("depth.cap.max_m", 38)          # descriptor copied from euler.depth@1.1
 builder.metric("absrel")                      # definition copied, rev 1
 builder.param("lab.knob", 3, descriptor={     # a term no vocabulary has
     "label": "knob", "role": "definition"})
 ```
 
 A key that is in no loaded vocabulary raises unless you pass its descriptor.
+
+A vocabulary of training telemetry says `"context": "train"`; every other
+vocabulary is an evaluation vocabulary, and a training definition never
+carries the `id` of one of its metrics.
 
 ## Adding a parameter
 

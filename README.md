@@ -143,6 +143,19 @@ Stages are optional. Omit `stages=` and build names with
 Invalid modalities, stages, or name segments raise `ValueError` at the point of
 construction.
 
+### Training naming 2.0 and validation sets
+
+Pass `metrics=` (metric definitions: direction, bounds, unit, display) instead
+of `descriptions=` and the declaration becomes training naming 2.0: the
+definitions travel with the run, consumers read them instead of guessing, and
+the run is held to its declaration for every key it logs. Validation scores
+that an evaluator also computes (AbsRel on a held-out set, say) are not
+training metrics: record them as a **validation set**, an ordinary
+evaluation in contract terms with the evaluator's own names, so a validation
+curve can be judged against the final evaluation (`same protocol`,
+`compared on N shared files`, …). See [docs/training.md](docs/training.md)
+and the rollout plan in [docs/training-alignment-plan.md](docs/training-alignment-plan.md).
+
 ## Evaluation envelopes
 
 Evaluation schemas often use axes such as space, category, and reduction rather
@@ -226,7 +239,8 @@ A verdict is `same protocol`, `compared on N shared files`,
 `comparable · <reason>` or `not comparable · <reason>`. Producers build the
 block with `ProtocolBuilder`, which copies the terms they use from the shipped
 vocabularies (`euler.core`, `euler.sky`, `euler.depth`, `euler.rgb`,
-`euler.rays`, `euler.points3d`); schema-1 files are read through a frozen
+`euler.rays`, `euler.points3d`, and `euler.train` for training telemetry);
+schema-1 files are read through a frozen
 legacy adapter. The package also ships the JSON Schemas, a dependency-free TS
 port for consumers (`euler_metric_naming/contract/ts/`) and conformance
 fixtures both implementations pass. See [docs/api.md](docs/api.md#comparison-contract-euler_metric_namingcontract)

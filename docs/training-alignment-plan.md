@@ -257,14 +257,17 @@ Checked against euler-view `main` at 68c84699 (code reading, not a test run):
 Updated as each step lands. Commit hashes are on the `training-naming-v2`
 branches of each repository.
 
-- [x] Setup documents written (`docs/training.md`, this plan).
-- [ ] euler-metric-naming 0.4.0: training naming 2.0 in `MetricNamespace`.
-- [ ] euler-metric-naming 0.4.0: validators, definitions, validation-pass
-      materialization (Python).
-- [ ] euler-metric-naming 0.4.0: the same in the TS artifact.
-- [ ] euler-metric-naming 0.4.0: vocabularies `euler.train` 1.0, `euler.depth` 1.1.
-- [ ] euler-metric-naming 0.4.0: JSON Schemas, conformance fixtures (Python and TS).
-- [ ] euler-metric-naming 0.4.0: docs, CHANGELOG, version; full suite on 3.9 and current.
+- [x] Setup documents written (`docs/training.md`, this plan) — 4696dc3.
+- [x] euler-metric-naming 0.4.0: training naming 2.0 in `MetricNamespace` — 33c2819.
+- [x] euler-metric-naming 0.4.0: validators, definitions, validation-pass
+      materialization (Python) — 33c2819.
+- [x] euler-metric-naming 0.4.0: the same in the TS artifact — 33c2819.
+- [x] euler-metric-naming 0.4.0: vocabularies `euler.train` 1.0, `euler.depth` 1.1 — 33c2819.
+- [x] euler-metric-naming 0.4.0: JSON Schemas, conformance fixtures (Python and TS) — 33c2819.
+- [x] euler-metric-naming 0.4.0: docs, CHANGELOG, version; full suite on 3.9
+      (473 passed) and 3.13 with the contract extra (474 passed); node
+      conformance 20 of 20; `generate_ts.py --check` and
+      `generate_fixtures.py --check` clean; ruff clean.
 - [ ] euler-eval 3.2.0: shared protocol helpers; `DepthValidationSet`.
 - [ ] euler-eval 3.2.0: decisive test (same protocol, equal values; subset paired).
 - [ ] euler-eval 3.2.0: euler-train payload pointers; requirements.txt; docs.

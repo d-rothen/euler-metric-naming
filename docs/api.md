@@ -30,6 +30,9 @@ MetricNamespace(
     context="train",
     descriptions=None,
     axes=None,
+    metrics=None,
+    namespace_metrics=None,
+    axis_roles=None,
 )
 ```
 
@@ -42,6 +45,9 @@ MetricNamespace(
 | `context` | Namespace context: `train` (default) or `eval`. |
 | `descriptions` | Base metric names mapped to `MetricDescription` objects. |
 | `axes` | Custom axis declarations, normally used by evaluation producers. Custom axes and `stages` are mutually exclusive. |
+| `metrics` | Training naming 2.0: metric definitions (contract §4.9 dicts, or `MetricDescription` objects) by base metric name, shared by every modality namespace. Not together with `descriptions`; `train` context only. |
+| `namespace_metrics` | Training naming 2.0: definitions per namespace key (`"depth.train"`, `"sys.train"`); they win over `metrics` there. |
+| `axis_roles` | Training naming 2.0: contract axis role per axis name (default `kind` → `kind`, `stage` → `stage`). |
 
 The `producer`, `producer_version`, `modalities`, `stages`, `context`, and
 `descriptions` properties expose copies or immutable views of the constructor
@@ -107,6 +113,37 @@ independent dictionaries, so callers may safely specialize a returned payload
 without changing another modality's entry.
 
 Calling this method from an `eval` namespace raises `TypeError`.
+
+### Training naming 2.0
+
+With `metrics=` or `namespace_metrics=`, `training_naming_config()` writes a
+training naming 2.0 declaration ([training.md](training.md)): every namespace
+gets `axisRoles` and `metrics` (contract metric definitions), the
+`metricDescriptions` derived from them for older consumers, and `sys.train`
+the `euler.train` vocabulary terms (`lr`, `grad_norm`, and the GPU values
+euler-train records). A run that declares 2.0 is held to it for every key it
+logs: each must decompose under a declared namespace and have a definition.
+The declaration is checked before it is returned; a definition that claims an
+evaluation metric id raises `ValueError`.
+
+```python
+ns = MetricNamespace(
+    producer="euler_train.weather_model",
+    producer_version="0.2.0",
+    modalities=("depth", "rgb"),
+    stages=("prior", "final"),
+    metrics={
+        "total": MetricDescription(is_higher_better=False, display_name="Total loss"),
+        "depth_mae": {"kind": "score", "direction": "lower", "unit": "m", "bounds": [0, None]},
+    },
+    namespace_metrics={"rgb.train": {"image_psnr": MetricDescription(is_higher_better=True, unit="dB")}},
+)
+euler_train.init(metric_naming=ns.training_naming_config())
+```
+
+`MetricDescription.to_definition()` and `MetricDescription.from_definition()`
+convert between the two forms (`is_higher_better=None` becomes direction
+`none`).
 
 ### Evaluation metric-set envelope
 
@@ -322,6 +359,7 @@ protocol = builder.build()                           # JSON-ready; raises Protoc
 | `population(ids, *, unit=None, accounting=None, items=True)` | `population` (NFC ids, `count`, `manifest`); `items.ids` |
 | `stratification(id, mapping)` | a stratification (`sqrt_stratification(lo, hi)` builds euler-eval's benchmark bins) |
 | `axis(name, role, *, stratification=None)` | the role of a metricSet axis |
+| `describe(key, *, descriptor=None)` | a descriptor snapshot without a value, for keys a validation pass records (training.md §3.2) |
 | `reducer(value, reducer=None)` / `metric(base, definition=None)` | a reducer / metric definition snapshot |
 | `metrics_for(names, namespace, axes, *, missing="error")` | definitions of every base metric of `names`, and reducers of their reduction values |
 | `series(name, values)` | a per-item series aligned with `items.ids` |
@@ -366,6 +404,34 @@ verdict.to_dict()
 | `load_vocabulary(id)`, `available_vocabularies()`, `VocabularySet` | vocabulary lookup |
 | `legacy_table()`, `normalize_legacy(...)` | the frozen v1 adapter |
 
+### Training runs and validation sets
+
+Specified in [training.md](training.md). Problems are `Problem(code, path,
+message)`; codes and paths are shared with the TS artifact.
+
+| Function | Purpose |
+|---|---|
+| `training_naming_problems(naming)` | problems of a training naming 2.0 declaration |
+| `training_metric_problem(naming, key)` | the problem of one `train.jsonl` / `val.jsonl` key (`no_namespace`, `evaluation_name`, `no_decomposition`, `no_definition`), or `None` |
+| `metric_value_problem(value)` | `not_a_number` unless a finite number |
+| `training_metric_definition(naming, key)` | the key's definition in the run's declaration, or `None` |
+| `training_contract(naming, namespace)` | a contract-shaped view (`metricSet`, `axes`, `metrics`) for definition readers |
+| `is_training_naming_v2(naming)` | whether the declaration claims 2.x |
+| `validation_set_problems(document)` | problems of a set document (the protocol block itself: `check_protocol`) |
+| `validation_pass_problems(document, record)` | problems of a pass record against its set |
+| `validation_pass_contract(document, record)` | the normalized contract of the evaluation a pass stands for |
+| `load_validation_pass(document, record)` → `EvalFile` | the pass as a loaded results file, for `compare_files` and `recompute_cell` |
+| `evaluation_metric_ids()` | ids of the evaluation vocabularies' metrics |
+
+```python
+from euler_metric_naming.contract import compare_files, load_eval_file, load_validation_pass
+
+passed = load_validation_pass(set_document, pass_record)
+evaluated = load_eval_file("pred/.eval/depth/eval.json")
+compare_files(passed, evaluated, "depth.eval.metric.standard.image_mean.absrel").label
+# "same protocol" | "compared on 64 shared files" | "not comparable · depth cap differs"
+```
+
 ### TypeScript artifact
 
 `euler_metric_naming/contract/ts/` ships the same contract for TS consumers
@@ -377,7 +443,12 @@ vocabularies, legacy table, schemas), and `euler-contract-node.ts` (optional
 itemsB, perItemA, perItemB})`, `compareFiles`, `relevantKeys(a, b | null,
 name)`, `recompute`, `recomputeCell`,
 `definitionKey`, `manifestHash`, `canonicalize`, `evaluateCondition`,
-`measure`, `phrase`. Hash functions take an optional
+`measure`, `phrase`, and for training runs `trainingNamingProblems`,
+`trainingMetricProblem`, `trainingMetricDefinition`, `trainingContract`,
+`validationSetProblems`, `validationPassProblems`, `validationPassContract`,
+`loadValidationPass`. The generated data also holds the JSON Schemas
+`TRAINING_NAMING_SCHEMA`, `VALIDATION_SET_SCHEMA` and `VALIDATION_PASS_SCHEMA`.
+Hash functions take an optional
 `sha256Hex(bytes: Uint8Array) => string`; a pure-TS SHA-256 is the default.
 Run its conformance suite with
 `node --experimental-strip-types --test euler_metric_naming/contract/ts/conformance.test.ts`.
