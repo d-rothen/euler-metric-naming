@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib.util
+from importlib.metadata import version
 
 import pytest
 
@@ -26,7 +27,7 @@ from euler_metric_naming import (
 
 class TestMetricNamespaceInit:
     def test_package_version(self):
-        assert __version__ == "0.4.0"
+        assert __version__ == version("euler-metric-naming")
 
     @pytest.mark.skipif(
         importlib.util.find_spec("euler_dataset_contract") is None,

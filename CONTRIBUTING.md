@@ -58,8 +58,7 @@ uvx twine check dist/*
 
 ## Releasing
 
-1. Update `__version__` in `euler_metric_naming/__init__.py`; package metadata
-   reads it from there.
+1. Run `uv version <version>` to update the version in `pyproject.toml` and `uv.lock`.
 2. Update user-facing documentation when the contract changes.
 3. Run the checks above and build the distributions.
 4. Tag the release `v<version>` and push the tag.
