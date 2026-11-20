@@ -46,6 +46,7 @@ Documentation = "https://github.com/d-rothen/euler-metric-naming#readme"
 [project.optional-dependencies]
 contract = ["euler-dataset-contract"]
 dev = [
+    "jsonschema>=4.18",
     "pytest>=7",
     "ruff>=0.2",
 ]
@@ -57,7 +58,16 @@ version = {attr = "euler_metric_naming.__version__"}
 include = ["euler_metric_naming*"]
 
 [tool.setuptools.package-data]
-euler_metric_naming = ["py.typed"]
+euler_metric_naming = [
+    "py.typed",
+    "contract/schema/*.json",
+    "contract/vocabularies/*.json",
+    "contract/legacy/*.json",
+    "contract/ts/*.ts",
+    "contract/fixtures/*.json",
+    "contract/fixtures/*.md",
+    "contract/fixtures/evals/*.json",
+]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
