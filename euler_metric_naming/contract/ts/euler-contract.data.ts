@@ -2264,7 +2264,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2291,7 +2290,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2319,7 +2317,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2346,7 +2343,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2374,7 +2370,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2401,7 +2396,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2428,7 +2422,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2455,7 +2448,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2482,7 +2474,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2509,7 +2500,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2536,7 +2526,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2563,7 +2552,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2590,7 +2578,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2617,7 +2604,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2644,7 +2630,6 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				},
 				"requires": [
 					"gt",
-					"input",
 					"segmentation"
 				],
 				"dependsOn": [
@@ -2716,9 +2701,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
-				"requires": [
-					"input"
-				],
+				"requires": [],
 				"dependsOn": [
 					"*"
 				]
@@ -2742,9 +2725,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
-				"requires": [
-					"input"
-				],
+				"requires": [],
 				"dependsOn": [
 					"*"
 				]
@@ -2767,9 +2748,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
-				"requires": [
-					"input"
-				],
+				"requires": [],
 				"dependsOn": [
 					"*"
 				]
@@ -2792,9 +2771,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
-				"requires": [
-					"input"
-				],
+				"requires": [],
 				"dependsOn": [
 					"*"
 				]
