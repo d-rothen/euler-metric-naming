@@ -201,6 +201,37 @@ The public helpers also include `recompose`, `compare_stages`, `filter_glob`,
 and `validate_metric_name`. See the [API guide](docs/api.md) for payload shapes,
 description fields, matching behavior, and naming constraints.
 
+## Comparison contract
+
+Results files of `euler-eval` carry a `protocol` block that says how the
+evaluation was set up. Schema 2 of that block — defined in
+[docs/contract.md](docs/contract.md) — lets a consumer judge **any** two
+evaluations, of any modality, with one generic algorithm: every parameter,
+observation, reference, stratification, reducer and metric definition travels
+with its descriptor, so a new metric or a whole new modality needs no consumer
+change.
+
+```python
+from euler_metric_naming.contract import compare_files, load_eval_file
+
+verdict = compare_files(
+    load_eval_file("depthpro/.eval/depth/eval.json"),
+    load_eval_file("mari/.eval/depth/eval.json"),
+    "depth.eval.metric.standard.image_mean.absrel",
+)
+verdict.label   # "comparable · domain differs by 0.9 %"
+```
+
+A verdict is `same protocol`, `compared on N shared files`,
+`comparable · <reason>` or `not comparable · <reason>`. Producers build the
+block with `ProtocolBuilder`, which copies the terms they use from the shipped
+vocabularies (`euler.core`, `euler.sky`, `euler.depth`, `euler.rgb`,
+`euler.rays`, `euler.points3d`); schema-1 files are read through a frozen
+legacy adapter. The package also ships the JSON Schemas, a dependency-free TS
+port for consumers (`euler_metric_naming/contract/ts/`) and conformance
+fixtures both implementations pass. See [docs/api.md](docs/api.md#comparison-contract-euler_metric_namingcontract)
+and [docs/vocabulary.md](docs/vocabulary.md).
+
 ## Development
 
 ```bash
@@ -209,6 +240,8 @@ cd euler-metric-naming
 uv sync --extra dev                 # or: pip install -e ".[dev]"
 uv run pytest
 uv run ruff check .
+python scripts/generate_ts.py        # after changing vocabularies, legacy table or schemas
+python scripts/generate_fixtures.py  # after changing how fixture eval files are built
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for test and release guidance.

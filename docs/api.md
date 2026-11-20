@@ -279,3 +279,101 @@ pip install "euler-metric-naming[contract]"
 
 Unknown registry entries issue a warning rather than failing construction, so
 custom modalities remain possible and the core package stays dependency-free.
+
+## Comparison contract (`euler_metric_naming.contract`)
+
+The evaluation protocol contract, schema 2, is defined normatively in
+[contract.md](contract.md); terms are authored as described in
+[vocabulary.md](vocabulary.md). Everything below is dependency-free.
+
+### Producers: `ProtocolBuilder`
+
+```python
+from euler_metric_naming.contract import ProtocolBuilder, hash_value, sqrt_stratification
+
+builder = ProtocolBuilder(
+    "depth.dense",                                   # protocol.task
+    ["euler.core", "euler.sky", "euler.depth"],      # vocabularies to take terms from
+)
+builder.reference(
+    "gt",
+    identity=hash_value({"dataset": dataset, "manifest": manifest, "head": head}),
+    modality="depth",
+    dataset={"id": "cerema", "variant": "cropped", "split": None, "scope": "depth"},
+    view={"source": "cerema/rgb_left@1024x1920", "region": [270, 170, 734, 1730]},
+)
+builder.params({"depth.cap.max_m": 38, "depth.alignment.applied": False})
+builder.observe("domain.region", {"frame": "cerema/rgb_left@1024x1920", "box": [270, 170, 734, 1730]})
+builder.population(item_ids, unit="image")           # count + manifest (+ items.ids)
+builder.stratification("depth.gt_range", sqrt_stratification(0.01, 32))
+builder.axis("space", "space").axis("category", "family").axis("reduction", "reduction")
+builder.axis("bin", "stratum", stratification="depth.gt_range")
+builder.metrics_for(metric_names, "depth.eval", axes)  # definitions + reducers of every base
+builder.series("depth.eval.metric.standard.count", counts)
+protocol = builder.build()                           # JSON-ready; raises ProtocolValidationError
+```
+
+| Method | Records |
+|---|---|
+| `param(key, value, *, descriptor=None)` | a parameter (scalar or ≤ 64 scalars) and its descriptor snapshot |
+| `params(mapping)` | several vocabulary parameters |
+| `observe(key, value, *, descriptor=None)` | an observation |
+| `reference(role, *, identity, modality=None, dataset=None, manifest=None, view=None, descriptor=None)` | `references.<role>` and the `reference.<role>` descriptor |
+| `population(ids, *, unit=None, accounting=None, items=True)` | `population` (NFC ids, `count`, `manifest`); `items.ids` |
+| `stratification(id, mapping)` | a stratification (`sqrt_stratification(lo, hi)` builds euler-eval's benchmark bins) |
+| `axis(name, role, *, stratification=None)` | the role of a metricSet axis |
+| `reducer(value, reducer=None)` / `metric(base, definition=None)` | a reducer / metric definition snapshot |
+| `metrics_for(names, namespace, axes, *, missing="error")` | definitions of every base metric of `names`, and reducers of their reduction values |
+| `series(name, values)` | a per-item series aligned with `items.ids` |
+| `build()` | the validated `protocol` dict |
+
+Terms come from the loaded vocabularies; an unknown key raises `KeyError`
+unless its descriptor or definition is passed explicitly. `check_protocol(p)`
+/ `protocol_problems(p)` validate any block structurally (closed sets, v1
+parameter limits, shapes).
+
+### Consumers: normalize, compare, recompute
+
+```python
+from euler_metric_naming.contract import compare_files, load_eval_file
+
+a = load_eval_file("model_a/.eval/depth/eval.json")   # path, JSON text or dict; v1 or v2
+b = load_eval_file("model_b/.eval/depth/eval.json")
+verdict = compare_files(a, b, "depth.eval.metric.standard.image_mean.absrel")
+verdict.tier     # "same" | "paired" | "comparable" | "incomparable"
+verdict.label    # "comparable · domain differs by 0.9 %"
+verdict.shared   # N shared files when the population rule compared id sets
+verdict.to_dict()
+```
+
+| Function | Purpose |
+|---|---|
+| `normalize(protocol, metric_set=None, meta=None)` | any schema version → contract (v1 through the legacy adapter) |
+| `load_eval_file(source)` → `EvalFile` | namespace, axes, contract, flattened `metrics`, `per_file` (item id → name → value), `item_ids`, `series`, `per_item_names` |
+| `file_evidence(eval_file)` | `(items, per_item_names)`: NFC item set (None when unknown or not matching the manifest) |
+| `compare(a, b, metric_name, items_a=None, items_b=None, per_item_a=None, per_item_b=None)` → `Verdict` | the §8 engine on two contracts |
+| `compare_files(file_a, file_b, metric_name)` | `compare` with evidence from the files |
+| `recompute(op, values, items=None, weights=None, form=None)` | mean / median / pool of per-item values |
+| `recompute_cell(contract, eval_file, metric_name, items=None)` | an aggregate recomputed on (shared) items |
+| `per_item_name(contract, metric_name)` | the per-item name of an aggregate |
+| `definition_key(contract)`, `definition_key_object(contract)` | §9.4 grouping key |
+| `manifest_hash(ids)`, `hash_value(value)`, `canonicalize(value)` | §9 hashes and RFC 8785 text |
+| `evaluate_condition(cond, parameters, observations)` | §7 (True / False / None) |
+| `measure(kind, a, b)`, `phrase(...)`, `format_percent`, `format_sig3` | §3.3 |
+| `load_vocabulary(id)`, `available_vocabularies()`, `VocabularySet` | vocabulary lookup |
+| `legacy_table()`, `normalize_legacy(...)` | the frozen v1 adapter |
+
+### TypeScript artifact
+
+`euler_metric_naming/contract/ts/` ships the same contract for TS consumers
+(euler-view): `euler-contract.ts` (logic and types, a port of the Python),
+`euler-contract.data.ts` (generated by `scripts/generate_ts.py`: closed set,
+vocabularies, legacy table, schemas), and `euler-contract-node.ts` (optional
+`node:crypto` wiring). The API mirrors the Python one in camelCase:
+`normalize`, `loadEvalFile`, `fileEvidence`, `compare(a, b, name, {itemsA,
+itemsB, perItemA, perItemB})`, `compareFiles`, `recompute`, `recomputeCell`,
+`definitionKey`, `manifestHash`, `canonicalize`, `evaluateCondition`,
+`measure`, `phrase`. Hash functions take an optional
+`sha256Hex(bytes: Uint8Array) => string`; a pure-TS SHA-256 is the default.
+Run its conformance suite with
+`node --experimental-strip-types --test euler_metric_naming/contract/ts/conformance.test.ts`.

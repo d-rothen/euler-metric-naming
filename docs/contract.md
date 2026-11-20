@@ -68,7 +68,9 @@ Changing anything in this section is a **major** version change.
 | `measure` | comparable, with the measure of `descriptor.observe` (3.3); unmeasurable → `incomparable` |
 | `ignore` | nothing |
 
-An unknown role or compare value MUST be treated as `equal`.
+An unknown role or compare value MUST be treated as `equal`: a descriptor
+whose `role` is missing or unknown compares `equal` whatever its `compare`
+says, and an unknown `compare` value is `equal`.
 
 ### 3.3 Observation kinds and their measures (`descriptor.observe`)
 
@@ -80,12 +82,17 @@ difference) and a phrase. A consumer implements exactly these five:
 | `region` | `{"frame": string, "box": [top, left, height, width]}` (numbers ≥ 0) | `1 − IoU(boxA, boxB)`; frames differ → unmeasurable | `<label> differs by x %` |
 | `count` | number ≥ 0 | `|a − b| / max(|a|, |b|)`, 0 when both are 0 | `<label> differs by x %` |
 | `fraction` | number in [0, 1] | `|a − b|` | `<label> differs by x pp` |
-| `factor` | number > 0, or a list of them of equal length | `max_i(max(a_i/b_i, b_i/a_i)) − 1` | `<label> (A vs B)` |
-| `size` | list of numbers ≥ 0 | relative difference of the products, as `count` | `<label> differs by x %` |
+| `factor` | number > 0, or a non-empty list of them; both sides the same shape and length | `max_i(max(a_i/b_i, b_i/a_i)) − 1` | `<label> (A vs B)` |
+| `size` | non-empty list of numbers ≥ 0; both sides the same length | relative difference of the products, as `count` | `<label> differs by x %` |
 
 A value that does not have the declared shape, a missing value on one side,
-or an unknown kind is unmeasurable. The tolerance is zero: every `d > 0` is
-reported.
+or an unknown kind is unmeasurable; so is a `region` pair whose union area is
+0. The tolerance is zero: every `d > 0` is reported. Booleans are not
+numbers. Measures are computed in IEEE double arithmetic in exactly the
+order the formulas are written (for `region`: `inter = max(0, min(t1+h1,
+t2+h2) − max(t1, t2)) × max(0, min(l1+w1, l2+w2) − max(l1, l2))`,
+`union = h1·w1 + h2·w2 − inter`, `d = 1 − inter / union`), so `d` is
+bit-identical across implementations.
 
 Number formatting in phrases, identical in every implementation:
 
@@ -94,9 +101,11 @@ Number formatting in phrases, identical in every implementation:
   `12.0`); a non-zero `d` with `t = 0` prints as `<0.1`. For `fraction` the
   unit is `pp` instead of `%`.
 - Factor values `A`, `B`: each number formatted like ECMAScript
-  `Number.prototype.toPrecision(3)`, then trailing zeros of the fraction and a
-  trailing `.` removed (`1.0417` → `1.04`, `1` → `1`); a list joins its
-  numbers with `×` (`1.04×1.01`).
+  `Number.prototype.toPrecision(3)` (rounding the exact binary value half
+  up, `1.125` → `1.13`, `2.675` → `2.67`; exponent form below `1e-6` and from
+  `1e3`, `1234` → `1.23e+3`), then trailing zeros of the fraction and a
+  trailing `.` removed (`1.0417` → `1.04`, `1` → `1`, `0` and `-0` → `0`); a
+  list joins its numbers with `×` (`1.04×1.01`).
 - Stratum edges in `bins differ` phrases use the same 3-significant-digit
   format.
 
@@ -133,6 +142,10 @@ items:
 | `pool` | the metric's `pool` form, weighted by its weight statistic (3.8) |
 | `none` | not recomputable from per-item values |
 
+Both sides must give the cell's reduction value the same `recompute`; a
+missing reducer counts as `none`. Mean and pooled sums run over the items in
+code-point order of their ids.
+
 ### 3.8 Pool forms (`metric.pool.form`)
 
 | Form | Pooled value from per-item values `v_i` and weights `w_i` |
@@ -147,7 +160,9 @@ Items with a null value or weight, or weight 0, are skipped.
 
 `space`, `reduction`, `stratum`, `variant`, `family`, `stage`, `kind`. Only
 `reduction`, `stratum` and `space` change consumer behaviour (8.1); the others
-are carried for display. An unknown axis role is treated as `family`.
+are carried for display. An unknown axis role, and an axis that
+`protocol.axes` does not list, is treated as `family`. At most one axis has
+the role `space` and at most one the role `reduction`.
 
 ### 3.10 Condition operators (section 7)
 
@@ -299,14 +314,18 @@ definition key.
 Either `edges` (n+1 numbers, ascending) with `labels` (n strings), or
 `categories` (list of strings) for categorical strata. `total` names the
 stratum label that covers the union. The **identity projection** of a
-stratification is the object without `label`, `description` and `unit`. Two
-stratifications are the same exactly when their identity projections are
-equal (8.1).
+stratification is the object without `label`, `description` and `unit`, and
+without properties whose value is `null` (so `"categories": null` and a
+missing `categories` are the same). Two stratifications are the same exactly
+when their identity projections are JSON-equal (8.0). The `sqrt_equal_width`
+scheme's edges are `e_0 = lo`, `e_n = hi`, `e_i = r × r` with
+`r = sqrt(lo) + i × (sqrt(hi) − sqrt(lo)) / n` (euler-eval's benchmark bins).
 
 ### 4.7 Reducer
 
-`{"recompute": "mean" | "median" | "pool" | "none", "over": "item" | "observation" | "dataset", "label": "…", "description": "…"}`
-keyed by the value of the axis whose role is `reduction`.
+`{"recompute": "mean" | "median" | "pool" | "none", "over": "item" | "observation" | "dataset", "label": "…", "description": "…", "vocabulary": "<id>@<version>"}`
+keyed by the value of the axis whose role is `reduction`. `over` is
+informational.
 
 ### 4.8 Axis role
 
@@ -322,7 +341,7 @@ consumed axis segments are removed (euler-metric-naming `decompose`).
 |---|---|---|
 | `id` | global id, e.g. `depth.absrel` | — |
 | `kind` | 3.6 | `score` |
-| `rev` | integer ≥ 1, the definition revision | — (not recorded) |
+| `rev` | integral number ≥ 1, the definition revision (`2.0` is 2) | — (not recorded) |
 | `displayName`, `description` | string | — |
 | `direction` | 3.5 | — |
 | `bounds` | `[min \| null, max \| null]` | — |
@@ -332,6 +351,7 @@ consumed axis segments are removed (euler-metric-naming `decompose`).
 | `pool` | `{"form": 3.8, "weight": "<base name of a statistic>"}` | `{"form": "none"}` |
 | `requires` | [reference role] | all roles (strict) |
 | `dependsOn` | [glob over keys] | `["*"]` (strict) |
+| `vocabulary` | `<vocabulary id>@<version>` the definition comes from | — |
 
 A consumer's own registry (display names, directions) is a fallback for
 metrics without a definition only.
@@ -362,7 +382,12 @@ stores them like per-file metrics. Score metrics stay in `per_file_metrics`.
 ## 5. Vocabularies
 
 A vocabulary is a JSON document
-`{"id": "euler.depth", "version": "1.2", "descriptors": {…}, "metrics": {…}, "reducers": {…}, "stratificationSchemes": {…}}`.
+`{"id": "euler.depth", "version": "1.2", "descriptors": {…}, "metrics": {…}, "reducers": {…}, "stratificationSchemes": {…}}`
+([schema](../euler_metric_naming/contract/schema/vocabulary-1.schema.json)).
+`descriptors` are keyed by key, `metrics` by the base metric name producers
+write (each with its global `id`), `reducers` by reduction axis value. Terms
+carry no `vocabulary` field; producers add `"vocabulary": "<id>@<version>"`
+when they copy a term. See [docs/vocabulary.md](vocabulary.md).
 Vocabularies live in
 [`euler_metric_naming/contract/vocabularies/`](../euler_metric_naming/contract/vocabularies/).
 Producers copy the terms they use into each file (`descriptors`, `metrics`,
@@ -439,80 +464,144 @@ equal when they have the same key set and equal values. `null` equals only
 
 Input: two normalized contracts `A` and `B` (a v1 file is first normalized by
 the legacy adapter, section 10), a metric name `m` present in both, and, when
-known, the evaluated item id sets and whether per-item series exist on each
-side. Output: a verdict `{tier, label, shared?, reasons[]}`; each reason is
-`{tier, code, key?, label, text, measure?, hint?}`.
+known, the evaluated item id sets and the per-item names with values on each
+side. A **normalized contract** is the `protocol` object with every block of
+section 4 present (an empty object, `task` null, when missing) plus
+`metricSet: {metricNamespace, axes}` copied from the file's `metricSet`
+envelope, which 8.1 needs. Output: a verdict `{tier, label, shared, reasons[]}`;
+each reason is `{tier, code, key?, label, text, measure?, hint?}`:
+
+- `key`: the descriptor key the reason is about (`reference.<r>`, a
+  parameter or observation key), absent otherwise;
+- `label`: the subject — the merged descriptor's `label` (default the key),
+  the base metric name (`revision`, the revision `not_recorded`), the
+  stratification's `label` (default the axis name), `files` (population
+  codes), the metric name (`schema`);
+- `text`: the phrase used in the verdict label;
+- `measure`: `{kind, d}` for `domain` reasons;
+- `hint`: the merged descriptor's `hint`, on `incomparable` reasons about a key.
+
+`shared` is `N` of 8.7 when that step compared id sets (`paired`,
+`population_partial`, `population_disjoint`), else `null`.
 
 The verdict is computed per metric cell; the tier is the most severe reason
 tier (`same` when there is none). The label is the label pattern of the tier
 (3.11) with the first reason of that tier as `<reason>`. Reasons are ordered
-by tier (most severe first), then by the step that produced them, then by key.
+by tier (most severe first), then by the step that produced them, then by key
+(code-point order; reasons without a key first). The steps, in this order,
+are: cell (8.1, 8.8), references (8.5), revision (8.2), stratification (8.3),
+parameters and observations (8.6), population (8.7). References come before
+the revision so that the label names the most fundamental difference (a
+different GT) first.
 
-**8.1 Cell.** Decompose `m` with the metricSet axes of each side; record the
-values of the axes whose role is `space`, `reduction` and `stratum`; look up
-the metric definition by base name (`A`'s if present, else `B`'s; when both
-exist and differ in `rev`, see 8.2). A name that does not decompose on one side
-yields `incomparable`, code `schema`.
+A conformant engine is symmetric: comparing `B` with `A` yields the same tier,
+reason codes and `shared` (texts of measured reasons swap `A` and `B`).
+
+**8.1 Cell.** Decompose `m` with the metricSet axes of each side
+(euler-metric-naming `decompose`); record, per role (3.9), the values of the
+axes that have one, in axis position order. A name that does not decompose
+on one side (or malformed axis declarations) yields `incomparable`, code
+`schema`, text `metric name does not decompose`; when the two sides give a
+different base name or different values per role, `incomparable`, code
+`schema`, text `metric name decomposes differently`. Nothing else is judged
+then.
+
+The metric definition is looked up by base name. When only one side has one,
+it is used. When both do, they are merged strictly so the verdict does not
+depend on the order of the sides: `requires` is the union (absent on either
+side: all roles), `dependsOn` the union (absent: `["*"]`), `pool` the common
+value when JSON-equal, else `{"form": "none"}`; display fields come from `A`.
+Different `rev`s are judged by 8.2.
 
 **8.2 Revision.** Both definitions record `rev` and they differ →
-`incomparable`, code `revision`, text `<metric> definition revised (rev a vs b)`.
-Exactly one side records `rev` → `incomparable`, code `not_recorded`.
+`incomparable`, code `revision`, text `<metric> definition revised (rev a vs b)`
+where `<metric>` is the base metric name (`absrel definition revised (rev 1
+vs 2)`). Exactly one side records `rev` (a missing definition records none) →
+`incomparable`, code `not_recorded`, text `<metric> revision not recorded`.
 
-**8.3 Stratification.** If the cell has a stratum value: the axis's
+**8.3 Stratification.** For each stratum value of the cell: the axis's
 stratification on each side (via `axes[axis].stratification`); missing on
-either side → `incomparable` `not_recorded`; identity projections differ →
-`incomparable`, code `stratification`, text `bins differ (<bin> <a> vs <b>)`
-where each side is `<lo>–<hi>` of that bin (the total bin spans the first to
-the last edge), followed by ` <unit>` when the stratification has one, e.g.
-`bins differ (near 0.01–3.81 m vs 0.01–11.6 m)`. When the bin has no edges on
-a side (categorical, or the label is missing there) the text is
-`bins differ (<bin>)`.
+either side → `incomparable` `not_recorded`, text `bins not recorded`;
+identity projections differ → `incomparable`, code `stratification`, text
+`bins differ (<bin> <a> vs <b>)` where each side is `<lo>–<hi>` of that bin
+(the total bin spans the first to the last edge), followed by ` <unit>` when
+the stratification has one, e.g.
+`bins differ (near 0.01–3.81 m vs 0.01–11.6 m)`. When the two sides' texts
+are identical (e.g. the total bin while inner edges differ) the phrase shows
+the edge lists instead: `bins differ (<bin>: edges <e1> vs <e2>)`, each list
+the stratification's edges in the 3-significant-digit format joined by `, `
+in `[` `]`, followed by ` <unit>` when present, e.g.
+`bins differ (all: edges [0, 10, 20, 40] dB vs [0, 5, 20, 40] dB)`. When the
+bin has no edges on a side (categorical, or the label is missing there), or
+the edge lists read the same too, the text is `bins differ (<bin>)`.
 
 **8.4 Relevance of a key.** A key `k` is relevant to the cell when
 (i) it matches a glob of the metric's `dependsOn` (default `*`), (ii) its
-merged descriptor's `affects` matches the cell (4.2), (iii) for `reference.<r>`
-keys, `r` is in the metric's `requires` (default: all), and (iv) neither the
-`appliesWhen` nor the `inertIf` rule of section 7 skips it.
+merged descriptor's `affects` matches the cell (4.2), (iii) for the keys of
+`references` (step 8.5), `r` of `reference.<r>` is in the metric's
+`requires` (default: all), and (iv) neither the `appliesWhen` nor the
+`inertIf` rule of section 7 skips it.
 
 **Merged descriptor.** When both sides describe `k`, the stricter wins field
-by field: `compare` by `equal` > `measure` > `pair` > `ignore`; conditions
-are taken from the side whose descriptor is used for `compare`. When only one
-side describes `k`, that descriptor is used. When neither does, `k` is
-`{"role": "definition", "compare": "equal"}`.
+by field: `compare` by `equal` > `measure` > `pair` > `ignore` (effective
+compare, 3.1); conditions are taken from the side whose descriptor is used
+for `compare`. When both have the same compare (a tie), both are used: `k`
+is skipped only when it is skipped under each descriptor's conditions. The
+cell is affected when either side's `affects` matches it (a missing or
+malformed `affects` matches every cell). `observe` must agree among the
+descriptors used (else unmeasurable); `default` is used when the descriptors
+used that define one agree. `label` and `hint` come from the first
+descriptor used (`A` first). When only one side describes `k`, that
+descriptor is used. When neither does, `k` is
+`{"role": "definition", "compare": "equal"}` with the key as label.
 
 **8.5 References.** For each relevant `reference.<r>` present on either side:
 
-- missing on one side → `incomparable`, code `not_recorded`;
+- missing on one side, or an `identity` that is not a string →
+  `incomparable`, code `not_recorded`, text `<label> not recorded`;
 - `identity` equal → nothing;
-- both have `view` with equal `source` → `comparable`, code `domain`, measure
-  `region` over the two view regions (frame = `source`), text
-  `<label> region differs by x %`;
-- otherwise → `incomparable`, code `reference`, text `<label> differs`.
+- both have `view` with equal `source` and the `region` measure over the two
+  view regions (frame = `source`) gives `d > 0` → `comparable`, code
+  `domain`, text `<label> region differs by x %` (e.g. `GT region differs by
+  3.7 %`);
+- otherwise (no common source, an unmeasurable region, or `d = 0`: same
+  region, different data) → `incomparable`, code `reference`, text
+  `<label> differs`.
 
 **8.6 Parameters and observations.** For each relevant key in the union of
-both sides' `parameters` and `observations`:
+both sides' `parameters` and `observations`, in code-point order (a key is
+looked up in `parameters`, then `observations`):
 
+- merged `compare` `ignore` or `pair` → nothing, whether or not both sides
+  record a value (`pair` differences are decided by the population rule);
 - missing on one side: use the descriptor's `default` for that side if
   defined; otherwise `incomparable`, code `not_recorded`, text
   `<label> not recorded`;
-- by merged `compare`:
-  - `ignore` → nothing;
-  - `equal` → JSON-unequal values → `incomparable`, code `parameter`,
-    text `<label> differs`, with `hint`;
-  - `pair` → unequal values → nothing here; the population rule decides;
-  - `measure` → `d > 0` → `comparable`, code `domain`, with the measure phrase;
-    unmeasurable → `incomparable`, code `parameter`.
+- JSON-equal values → nothing;
+- `equal` → `incomparable`, code `parameter`, text `<label> differs`, with
+  `hint`;
+- `measure` → `d > 0` → `comparable`, code `domain`, with the measure
+  phrase; unmeasurable → `incomparable`, code `parameter`, text
+  `<label> differs`.
 
-**8.7 Population.** Let `IA`, `IB` be the evaluated item id sets.
+**8.7 Population.** Let `IA`, `IB` be the evaluated item id sets. From a
+results file they are `items.ids`, else the per-file ids of
+`per_file_metrics` (4.4), NFC-normalized; they are unknown when the file has
+neither, or when `population.manifest` is recorded and the ids do not hash to
+it. The per-item names of a side are its per-file metric names and the names
+of its `items.series`.
 
 - Both manifests recorded and equal, or both id sets known and equal →
   nothing.
 - Otherwise, when both id sets are known: `N = |IA ∩ IB|`.
   - `N = 0` → `incomparable`, code `population_disjoint`,
     text `no shared files`.
-  - The cell is **pairable** when its reduction (if any) has
-    `recompute ≠ none`, per-item series exist on both sides, and for `pool`
-    the metric has `pool.form ≠ none` and weight series exist on both sides.
+  - The cell is **pairable** when it has a reduction value whose reducer has
+    the same `recompute ≠ none` on both sides (3.7), its per-item name (4.11)
+    has values on both sides, and for `pool` the (merged) metric has
+    `pool.form ≠ none` and its weight series exists on both sides. A cell
+    without a reduction value is not pairable: nothing says how its
+    aggregate follows from per-item values.
     Pairable → `paired`, code `population_paired`, `shared = N`, text
     `compared on N shared files`. The consumer recomputes both values on the
     shared items.
@@ -524,8 +613,13 @@ both sides' `parameters` and `observations`:
   never stand in for equal files.
 
 **8.8 Unsupported major.** If either side's `schemaVersion` major is not
-supported, compare `parameters` by strict equality over the union of keys;
-a difference → `incomparable`, code `schema`.
+supported (this document: 2, and 1 through section 10; an unparseable
+version is unsupported), compare `parameters` by strict equality over the
+union of keys, in code-point order; a key missing on one side →
+`incomparable`, code `schema`, text `<key> not recorded`; a difference →
+`incomparable`, code `schema`, text `<key> differs`. To say so, the verdict
+always carries a reason of tier `same`, code `schema`, text `compared by
+parameters only (schema <version> not supported)`.
 
 ## 9. Canonical forms and hashes
 
@@ -535,7 +629,9 @@ UTF-16 code units, no whitespace, strings escaped as ECMAScript
 controls as lower-case `\u00xx`, everything else literal), numbers serialized
 as ECMAScript `Number.prototype.toString` (shortest round-trip, exponent form
 `1e+21` / `1e-7` outside [1e-6, 1e21), `-0` → `0`). Non-finite numbers and
-lone surrogates are errors. Integers outside ±(2^53 − 1) are errors.
+lone surrogates are errors. Integer-typed values (a Python `int`, a JS
+`BigInt`) outside ±(2^53 − 1) are errors; doubles are always serialized
+(`1e21` → `1e+21`, `1.2345678901234568e+20` → `123456789012345680000`).
 
 **9.2 Hash format.** `"sha256:" + lower-case hex of SHA-256 over the UTF-8
 bytes of the JCS text`.
@@ -566,31 +662,38 @@ evaluations by it. Verdicts are still computed per cell.
 
 Files with `schemaVersion` `1.x` are normalized into a v2 contract by a frozen
 table (`contract/legacy/protocol-1.json`) and the rules below. The adapter may
-also read the file's `metricSet` (axes, metadata) and `meta`.
+also read the file's `metricSet` (axes, metadata) and `meta`. The table holds
+frozen snapshots of the descriptors of every key it produces (the 1.0
+vocabulary terms), so legacy normalization never changes with later
+vocabularies. The normalized contract keeps the file's `schemaVersion` and
+records `"adapter": "euler.legacy.protocol-1@1.0"`.
 
 | v1 key | v2 |
 |---|---|
-| `reference.<r>.{dataset,scope,split}` (+ `reference.gt.modality`) | `references.<r>` with `identity = sha256(JCS({modality, dataset, scope, split}))`; all-null → absent |
+| `reference.<r>.{dataset,scope,split}` (+ `reference.gt.modality`) | `references.<r>` (`input_rgb` → `input`) with `identity = sha256(JCS({modality, dataset, scope, split}))` (`modality` null for roles without one); dataset, scope and split all null → absent |
 | `population.samples` | `population.count` |
 | `population.gt_sky_masking` | `sky.gt.masking` |
 | `population.missing_segmentation` | `sky.gt.missing_policy` (default `"drop"`, applies when `sky.gt.masking`) |
 | `population.pred_sky_masking` | `sky.pred.masking` |
 | `population.evaluated_resolution` | observation `domain.grid` (`size`) |
-| `population.benchmark_depth_range_m` | stratification `depth.gt_range` (edges from `metricSet.metadata.benchmark.boundaries`, else recomputed with the square-root rule) and parameter `depth.benchmark.range_m` (`derived`) |
-| `method.metrics_revision` r | policy parameters: `spatial.resize_target` (`prediction_grid` if r < 2 else `gt_grid`), `spatial.mask_resample` (`nearest` / `nearest_exact`), `rgb.depth_bins.policy` (`v1` / `v2`), `rays.fov_policy` (`v1` / `v2`), `depth.invalid.policy` (`score_sentinel` if r < 3 else `exclude_sentinel`), `rgb.input.alignment_policy` (`upscale` if r < 4 else `follow_gt`) |
+| `population.benchmark_depth_range_m` | stratification `depth.gt_range` (edges from `metricSet.metadata.benchmark.boundaries` when its `range` equals the value, else recomputed with the `sqrt_equal_width` rule of 4.6) and parameter `depth.benchmark.range_m` (`derived`) |
+| `method.metrics_revision` r | policy parameters: `spatial.resize_target` (`prediction_grid` if r < 2 else `gt_grid`), `spatial.mask_resample` (`nearest` / `nearest_exact`), `rgb.depth_bins.policy` (`v1` / `v2`), `rays.fov_policy` (`v1` / `v2`), `depth.invalid.policy` (`score_sentinel` if r < 3 else `exclude_sentinel`), `rgb.input.alignment_policy` (`upscale` if r < 4 else `follow_gt`); an integer r above 4 additionally sets `legacy.metrics_revision` = r (`definition`), and an r that is not an integer ≥ 1 sets only that |
 | `method.depth_alignment` | `depth.alignment.mode` (`provenance`) and, when `metricSet.metadata.calibration_applied` is known, `depth.alignment.applied` (`definition`, affects `space = metric`) |
 | `method.sky_depth_m` | `depth.cap.max_m` |
 | `method.pred_sky_mask` | `sky.pred.fill` |
-| `method.spatial_alignment` | `spatial.method` (`derived`); plus observation `prediction.resample` (`factor`) for `resize_prediction` / `warp_prediction` and parameter `reference.gt.resample` (`definition`, a factor list) for `resize` / `warp` on RGB and rays, both from `meta.gt.dimensions` / `meta.pred.dimensions` when present |
+| `method.spatial_alignment` | `spatial.method` (`derived`); plus observation `prediction.resample` (`factor`, `[gt.h / pred.h, gt.w / pred.w]`) for `resize_prediction` / `warp_prediction` and parameter `spatial.gt_resample` (`definition`, `[pred.h / gt.h, pred.w / gt.w]`) for `resize` / `warp` (RGB and rays), both from `meta.gt.dimensions` / `meta.pred.dimensions`; `null` when either is missing. Both keys default to `[1, 1]` (not resampled) |
 | `method.fid_backend` | `rgb.fid.backend` (affects `fid`, `kid*`) |
 | `method.input_alignment` | `rgb.input.alignment` (affects `hautiere_*`) |
 | `method.points_3d_alignment` | `points3d.alignment.mode` (`provenance`) and `points3d.alignment.applied` from `calibration_applied` (`auto` ≡ `none`) |
+| any other key | copied to `parameters` unchanged, without a descriptor (compared `equal`, strictly) |
 
 Axis roles for v1 files: `space` → `space`, `category` → `family`,
 `reduction` → `reduction`, `bin` → `stratum` (`depth.gt_range`), `variant` →
-`variant`. Reducers: `image_mean` → `mean`, `image_median` → `median`,
-`pixel_pool` → `none` (v1 has no weights). v1 metrics have no definitions, so
-`requires` and `dependsOn` are strict.
+`variant`; other axes get no role (`family`). Reducers: `image_mean` →
+`mean`, `image_median` → `median`, `pixel_pool` → `none` (v1 has no
+weights). v1 metrics have no definitions, so `requires` and `dependsOn` are
+strict, and a v1 file never matches a v2 file on `rev` (8.2) or on reference
+identities (8.5).
 
 ## 11. Conformance
 
@@ -599,10 +702,17 @@ holds the golden material every implementation MUST pass:
 
 - `jcs.json` and `hashes.json`: canonical text and hashes;
 - `conditions.json`: condition, context, expected truth value;
+- `globs.json`, `measures.json`: globs, measures, phrases and number
+  formats;
+- `legacy.json`: v1 blocks and their normalized contracts;
 - `evals/`: golden results files (v2 and v1), including a synthetic modality
   no producer emits;
 - `verdicts.json`: the expected verdict for each (file A, file B, metric)
-  case: tier, label, reason codes, shared count, measures.
+  case: tier, label, reason codes, shared count, measures, hints and
+  recomputed values.
+
+The Python package and the TS artifact (`contract/ts/conformance.test.ts`)
+both run them; see the fixtures' README for the formats.
 
 A consumer is conformant when it reproduces every expected value in these
 files.

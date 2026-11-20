@@ -28,7 +28,14 @@ uv run pytest
 uv run ruff check .
 ```
 
-The suite does not require datasets, a GPU, or network access. New public
+The suite does not require datasets, a GPU, or network access. When `node`
+22 or newer is available it also runs the TS conformance suite of the
+comparison contract. After changing vocabularies, the legacy table or the
+schemas, regenerate the TS data with `python scripts/generate_ts.py`; after
+changing how the fixture eval files are built, run
+`python scripts/generate_fixtures.py`. Tests fail when either is stale.
+Expected verdicts in `contract/fixtures/verdicts.json` are written by hand
+from `docs/contract.md`, never copied from an engine's output. New public
 behavior should include both a focused unit test and, when serialization is
 involved, a round-trip or exact payload assertion.
 
