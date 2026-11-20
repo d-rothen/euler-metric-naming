@@ -105,7 +105,8 @@
        "scope": "rgb",
        "split": "test"
       },
-      "identity": "sha256:967cfe0416e022c6dcc586cd546bb007557ff93a4b7564c4e7449f2ae54cc11e"
+      "identity": "sha256:967cfe0416e022c6dcc586cd546bb007557ff93a4b7564c4e7449f2ae54cc11e",
+      "identityScheme": "euler.reference/1"
      },
      "input": {
       "dataset": {
@@ -113,7 +114,8 @@
        "scope": "rgb",
        "split": "test"
       },
-      "identity": "sha256:50293faecf200a8eb74bc63252dd8467a94d302b4ef3b1a538a4b3adab3b224e"
+      "identity": "sha256:50293faecf200a8eb74bc63252dd8467a94d302b4ef3b1a538a4b3adab3b224e",
+      "identityScheme": "euler.reference/1"
      }
     },
     "observations": {
@@ -237,7 +239,8 @@
        "scope": "points_3d",
        "split": null
       },
-      "identity": "sha256:7a05f8bd2e458ab8984d844a30eb87e753c7f3c19884eaab0e5fa2ae2e9ab4d7"
+      "identity": "sha256:7a05f8bd2e458ab8984d844a30eb87e753c7f3c19884eaab0e5fa2ae2e9ab4d7",
+      "identityScheme": "euler.reference/1"
      },
      "intrinsics": {
       "dataset": {
@@ -245,7 +248,8 @@
        "scope": "intrinsics",
        "split": null
       },
-      "identity": "sha256:8853b2465f1aa76a486f3441ff496b4c484a569782131bebfaafc6d4809fea93"
+      "identity": "sha256:8853b2465f1aa76a486f3441ff496b4c484a569782131bebfaafc6d4809fea93",
+      "identityScheme": "euler.reference/1"
      }
     },
     "observations": {

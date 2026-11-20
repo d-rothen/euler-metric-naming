@@ -41,6 +41,7 @@ from .verdict import (
     per_item_name,
     recompute,
     recompute_cell,
+    relevant_keys,
 )
 from .vocabulary import (
     Vocabulary,
@@ -93,6 +94,7 @@ __all__ = [
     "protocol_problems",
     "recompute",
     "recompute_cell",
+    "relevant_keys",
     "schema_major",
     "sqrt_equal_width_edges",
     "sqrt_stratification",

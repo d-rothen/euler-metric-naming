@@ -11,6 +11,7 @@ import { test } from 'node:test';
 import {
 	CanonicalizationError,
 	canonicalize,
+	compare,
 	compareFiles,
 	definitionKey,
 	definitionKeyObject,
@@ -28,6 +29,7 @@ import {
 	normalize,
 	phrase,
 	recomputeCell,
+	relevantKeys,
 	sha256Hex,
 	utf8Encode
 } from './euler-contract.ts';
@@ -231,6 +233,39 @@ test('verdicts are symmetric in tier, codes and shared', () => {
 			testCase.name
 		);
 		assert.equal(backward.shared, forward.shared, testCase.name);
+	}
+});
+
+// -- reference identity schemes and relevance ------------------------------------------------------
+
+test('reference identity schemes', () => {
+	const fixture = load('references.json');
+	const contract = (reference: Any) =>
+		normalize({ ...structuredClone(fixture.template), references: { gt: reference } }, fixture.metricSet);
+	for (const testCase of fixture.cases) {
+		for (const [a, b] of [
+			[testCase.a, testCase.b],
+			[testCase.b, testCase.a]
+		]) {
+			const verdict = compare(contract(a), contract(b), fixture.metric);
+			assert.equal(verdict.tier, testCase.tier, testCase.name);
+			assert.equal(verdict.label, testCase.label, testCase.name);
+			assert.deepEqual(
+				verdict.reasons.map((reason) => reason.code),
+				testCase.codes,
+				testCase.name
+			);
+			assert.equal(verdict.reasons[0]?.hint ?? null, testCase.hint, testCase.name);
+		}
+	}
+});
+
+test('relevant keys', () => {
+	for (const testCase of load('relevance.json').cases) {
+		const a = evalFile(testCase.a).contract;
+		const b = testCase.b ? evalFile(testCase.b).contract : null;
+		assert.deepEqual(relevantKeys(a, b, testCase.metric), testCase.keys, testCase.name);
+		assert.deepEqual(relevantKeys(b ?? a, b === null ? null : a, testCase.metric), testCase.keys, testCase.name);
 	}
 });
 

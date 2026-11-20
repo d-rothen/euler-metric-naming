@@ -253,6 +253,7 @@ is literal; matching is case-sensitive and anchored at both ends.
   "modality": "depth",
   "dataset": { "id": "cerema", "variant": "full_crop", "split": null, "scope": "depth" },
   "identity": "sha256:…",
+  "identityScheme": "euler.reference/2",
   "manifest": { "hash": "sha256:…", "count": 1600 },
   "view": { "source": "cerema/rgb_left@1024x1920", "region": [270, 170, 707, 1730] }
 }
@@ -262,6 +263,15 @@ is literal; matching is case-sensitive and anchored at both ends.
   considers the inputs identical. euler-eval uses
   `sha256(JCS({dataset, manifest, head}))`, where `head` is the canonical
   dataset head without volatile fields.
+- `identityScheme` (optional): how `identity` was computed, as
+  `<family>/<integer>`. euler-eval's identity above is `euler.reference/2`
+  (`ProtocolBuilder.reference` sets it unless told otherwise); the legacy
+  adapter's is `euler.reference/1` (section 10). Absent means unspecified
+  (compared as `""`). Identities of different schemes can never be equal, so
+  8.5 never calls them different data on that ground alone.
+- `modality` and `dataset` (`id`, `variant`, `split`, `scope`) are
+  informative; 8.5 reads `modality`, `dataset.id`, `dataset.scope` and
+  `dataset.split` when the identity schemes differ.
 - `view` (optional): the reference is a sub-region of a larger source frame.
   `region` is `[top, left, height, width]` in source pixels.
 - A role that was not configured is absent (not `null`).
@@ -554,6 +564,13 @@ merged descriptor's `affects` matches the cell (4.2), (iii) for the keys of
 `requires` (default: all), and (iv) neither the `appliesWhen` nor the
 `inertIf` rule of section 7 skips it.
 
+Consumers that want to show which keys matter for a cell can call the
+informative helper `relevant_keys(a, b, metric_name)` (TS `relevantKeys`):
+the `reference.<role>`, parameter and observation keys of either contract
+that pass (i)–(iv), computed by the engine's own code path. With one contract
+(`b` null) it is judged on its own. It adds no semantics: relevance alone does
+not mean a difference matters (that depends on `compare`, 8.6).
+
 **Merged descriptor.** When both sides describe `k`, the stricter wins field
 by field: `compare` by `equal` > `measure` > `pair` > `ignore` (effective
 compare, 3.1); conditions are taken from the side whose descriptor is used
@@ -572,6 +589,19 @@ descriptor is used. When neither does, `k` is
 - missing on one side, or an `identity` that is not a string →
   `incomparable`, code `not_recorded`, text `<label> not recorded`;
 - `identity` equal → nothing;
+- the two `identityScheme`s differ (4.3; absent counts as `""`): the
+  identities cannot be compared, so compare what both sides record —
+  `modality`, `dataset.id`, `dataset.scope`, `dataset.split`, each only when
+  non-null on both sides:
+  - any of them differs → `incomparable`, code `reference`, text
+    `<label> differs`;
+  - otherwise (they match, or nothing is checkable) → `incomparable`, code
+    `identity_format`, text `<label> identity recorded in an older evaluation
+    format` when both schemes have the same family and different integer
+    versions, else `<label> identity recorded in another evaluation format`,
+    hint `re-evaluate both with the same euler-eval version to compare them`.
+    Every future change of the identity scheme ends here, never in
+    "differs";
 - both have `view` with equal `source` and the `region` measure over the two
   view regions (frame = `source`) gives `d > 0` → `comparable`, code
   `domain`, text `<label> region differs by x %` (e.g. `GT region differs by
@@ -683,7 +713,7 @@ records `"adapter": "euler.legacy.protocol-1@1.0"`.
 
 | v1 key | v2 |
 |---|---|
-| `reference.<r>.{dataset,scope,split}` (+ `reference.gt.modality`) | `references.<r>` (`input_rgb` → `input`) with `identity = sha256(JCS({modality, dataset, scope, split}))` (`modality` null for roles without one); dataset, scope and split all null → absent |
+| `reference.<r>.{dataset,scope,split}` (+ `reference.gt.modality`) | `references.<r>` (`input_rgb` → `input`) with `identity = sha256(JCS({modality, dataset, scope, split}))` (`modality` null for roles without one), `identityScheme: "euler.reference/1"`, `dataset: {id, scope, split}` and `modality`; dataset, scope and split all null → absent |
 | `population.samples` | `population.count` |
 | `population.gt_sky_masking` | `sky.gt.masking` |
 | `population.missing_segmentation` | `sky.gt.missing_policy` (default `"drop"`, applies when `sky.gt.masking`) |
@@ -705,8 +735,10 @@ Axis roles for v1 files: `space` → `space`, `category` → `family`,
 `variant`; other axes get no role (`family`). Reducers: `image_mean` →
 `mean`, `image_median` → `median`, `pixel_pool` → `none` (v1 has no
 weights). v1 metrics have no definitions, so `requires` and `dependsOn` are
-strict, and a v1 file never matches a v2 file on `rev` (8.2) or on reference
-identities (8.5).
+strict, and a v1 file never matches a v2 file on `rev` (8.2: `<metric>
+revision not recorded`) or on reference identities: their schemes differ, so
+8.5 says `GT identity recorded in an older evaluation format` when the
+recorded dataset agrees and `GT differs` when it does not.
 
 ## 11. Conformance
 

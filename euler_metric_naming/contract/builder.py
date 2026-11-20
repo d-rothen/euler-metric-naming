@@ -20,11 +20,12 @@ Unknown terms raise unless their descriptor / definition is passed explicitly.
 from __future__ import annotations
 
 import copy
+import re
 import unicodedata
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
 from ..axes import AxisDeclaration, decompose
-from .closed import AXIS_ROLES, SCHEMA_VERSION
+from .closed import AXIS_ROLES, REFERENCE_IDENTITY_SCHEME, SCHEMA_VERSION
 from .hashing import manifest_hash
 from .validate import (
     ProtocolValidationError,
@@ -36,6 +37,8 @@ from .validate import (
     stratification_problems,
 )
 from .vocabulary import VocabularySet
+
+_SCHEME_RE = re.compile(r"^[^/\s]+/[0-9]+$")
 
 
 class ProtocolBuilder:
@@ -146,16 +149,26 @@ class ProtocolBuilder:
         manifest: Optional[Mapping[str, Any]] = None,
         view: Optional[Mapping[str, Any]] = None,
         descriptor: Optional[Mapping[str, Any]] = None,
+        identity_scheme: Optional[str] = REFERENCE_IDENTITY_SCHEME,
     ) -> ProtocolBuilder:
-        """Record a reference input; its descriptor key is ``reference.<role>``."""
+        """Record a reference input; its descriptor key is ``reference.<role>``.
+
+        ``identity_scheme`` (``<family>/<integer>``) names how *identity* was
+        computed; euler's v2 identities are ``euler.reference/2`` (default).
+        ``None`` leaves it unspecified.
+        """
         if not isinstance(identity, str) or not identity:
             raise ValueError("a reference needs a non-empty identity")
+        if identity_scheme is not None and not _SCHEME_RE.match(identity_scheme):
+            raise ValueError("identity_scheme must have the form <family>/<integer>")
         entry: dict = {}
         if modality is not None:
             entry["modality"] = modality
         if dataset is not None:
             entry["dataset"] = copy.deepcopy(dict(dataset))
         entry["identity"] = identity
+        if identity_scheme is not None:
+            entry["identityScheme"] = identity_scheme
         if manifest is not None:
             entry["manifest"] = copy.deepcopy(dict(manifest))
         if view is not None:

@@ -111,6 +111,7 @@ export const CLOSED_SETS = {
 	"reasonCodes": [
 		"schema",
 		"reference",
+		"identity_format",
 		"revision",
 		"not_recorded",
 		"stratification",
@@ -122,6 +123,8 @@ export const CLOSED_SETS = {
 		"population_unknown"
 	],
 	"itemIdScheme": "euler.item_id/1",
+	"referenceIdentityScheme": "euler.reference/2",
+	"legacyReferenceIdentityScheme": "euler.reference/1",
 	"itemIdSeparator": "~",
 	"parameterLimits": {
 		"maxParameters": 512,
@@ -4042,6 +4045,7 @@ export const LEGACY_PROTOCOL_1: GeneratedJson = {
 			"split"
 		],
 		"modalityField": "modality",
+		"identityScheme": "euler.reference/1",
 		"roleRenames": {
 			"input_rgb": "input"
 		}
@@ -4896,6 +4900,11 @@ export const PROTOCOL_SCHEMA: GeneratedJson = {
 				"identity": {
 					"type": "string",
 					"minLength": 1
+				},
+				"identityScheme": {
+					"type": "string",
+					"pattern": "^[^/\\s]+/[0-9]+$",
+					"description": "How identity was computed, <family>/<integer>: euler.reference/2 for euler's v2 identities, euler.reference/1 for the legacy adapter's. Absent = unspecified."
 				},
 				"manifest": {
 					"type": "object",

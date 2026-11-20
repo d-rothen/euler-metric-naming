@@ -180,6 +180,7 @@ def normalize_legacy(
             "split": values.get("split"),
         }
         reference["identity"] = hash_value(identity_source)
+        reference["identityScheme"] = spec["identityScheme"]
         contract["references"][name] = reference
         describe(f"reference.{name}")
 

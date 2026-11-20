@@ -227,6 +227,110 @@ def _relevant(
 # -- the engine ------------------------------------------------------------------------
 
 
+@dataclass
+class _Prepared:
+    """Everything a cell's judgement and its relevance rule share (8.1, 8.4)."""
+
+    side_a: _Side
+    side_b: _Side
+    cell: Cell
+    def_a: Optional[dict]
+    def_b: Optional[dict]
+    definition: dict
+    context_a: tuple
+    context_b: tuple
+    descriptors_a: dict
+    descriptors_b: dict
+
+
+def _prepare(a: Mapping[str, Any], b: Mapping[str, Any], metric_name: str):
+    """8.1 for a supported pair: a :class:`_Prepared`, or the schema reason."""
+    side_a = _decompose_cell(a, metric_name)
+    side_b = _decompose_cell(b, metric_name)
+    if side_a is None or side_b is None:
+        return Reason("incomparable", "schema", metric_name, "metric name does not decompose",
+                      step=STEP_SCHEMA)
+    if side_a.cell.base != side_b.cell.base or not json_equal(side_a.cell.roles, side_b.cell.roles):
+        return Reason("incomparable", "schema", metric_name, "metric name decomposes differently",
+                      step=STEP_SCHEMA)
+    base = side_a.cell.base
+    def_a, def_b = _definition(a, base), _definition(b, base)
+    return _Prepared(
+        side_a=side_a,
+        side_b=side_b,
+        cell=side_a.cell,
+        def_a=def_a,
+        def_b=def_b,
+        definition=_merged_definition(def_a, def_b),
+        context_a=_context(a),
+        context_b=_context(b),
+        descriptors_a=_record(a.get("descriptors")),
+        descriptors_b=_record(b.get("descriptors")),
+    )
+
+
+def _judge_key(prepared: _Prepared, key: str, reference: bool) -> tuple:
+    """``(merged descriptor, relevant)`` of a key under 8.4."""
+    descriptor = merge_descriptors(
+        key, prepared.descriptors_a.get(key), prepared.descriptors_b.get(key)
+    )
+    relevant = _relevant(
+        key,
+        descriptor,
+        prepared.cell,
+        prepared.definition,
+        prepared.context_a,
+        prepared.context_b,
+        reference,
+    )
+    return descriptor, relevant
+
+
+def _reference_roles(a: Mapping[str, Any], b: Mapping[str, Any]) -> list:
+    return sorted(set(_record(a.get("references"))) | set(_record(b.get("references"))))
+
+
+def _value_keys(a: Mapping[str, Any], b: Mapping[str, Any]) -> list:
+    keys: set = set()
+    for contract in (a, b):
+        keys |= set(_record(contract.get("parameters"))) | set(_record(contract.get("observations")))
+    return sorted(keys)
+
+
+def relevant_keys(
+    a: Mapping[str, Any], b: Optional[Mapping[str, Any]], metric_name: str
+) -> list:
+    """Keys relevant to a metric cell under §8.4, exactly as :func:`compare` judges them.
+
+    Returns the ``reference.<role>``, parameter and observation keys of either
+    contract that are relevant to cell *metric_name*, in code-point order.
+    With ``b=None`` the single contract is judged on its own (its descriptors;
+    a key is skipped when its ``appliesWhen`` is false / ``inertIf`` true
+    there). Relevance does not look at ``compare``: a ``provenance`` key can be
+    relevant and still never produce a reason. For an unsupported schema major
+    (§8.8) every parameter key is relevant; a name that does not decompose has
+    none.
+    """
+    other = a if b is None else b
+    if not (
+        schema_major(a.get("schemaVersion")) in SUPPORTED_MAJORS
+        and schema_major(other.get("schemaVersion")) in SUPPORTED_MAJORS
+    ):
+        return sorted(set(_record(a.get("parameters"))) | set(_record(other.get("parameters"))))
+    prepared = _prepare(a, other, metric_name)
+    if isinstance(prepared, Reason):
+        return []
+    keys = []
+    for role in _reference_roles(a, other):
+        key = f"reference.{role}"
+        if _judge_key(prepared, key, True)[1]:
+            keys.append(key)
+    for key in _value_keys(a, other):
+        if _judge_key(prepared, key, False)[1]:
+            keys.append(key)
+    return sorted(set(keys))
+
+
 def compare(
     a: Mapping[str, Any],
     b: Mapping[str, Any],
@@ -249,35 +353,21 @@ def compare(
         return _unsupported(a, b)
 
     # 8.1 cell
-    side_a = _decompose_cell(a, metric_name)
-    side_b = _decompose_cell(b, metric_name)
-    if side_a is None or side_b is None:
-        return _finish(
-            [Reason("incomparable", "schema", metric_name, "metric name does not decompose", step=STEP_SCHEMA)],
-            None,
-        )
-    if side_a.cell.base != side_b.cell.base or not json_equal(side_a.cell.roles, side_b.cell.roles):
-        return _finish(
-            [Reason("incomparable", "schema", metric_name, "metric name decomposes differently", step=STEP_SCHEMA)],
-            None,
-        )
-    cell = side_a.cell
+    prepared = _prepare(a, b, metric_name)
+    if isinstance(prepared, Reason):
+        return _finish([prepared], None)
+    cell = prepared.cell
     base = cell.base
-    def_a, def_b = _definition(a, base), _definition(b, base)
-    definition = _merged_definition(def_a, def_b)
-    context_a, context_b = _context(a), _context(b)
-    descriptors_a = _record(a.get("descriptors"))
-    descriptors_b = _record(b.get("descriptors"))
+    def_a, def_b = prepared.def_a, prepared.def_b
     reasons: list = []
 
     # 8.5 references
     refs_a, refs_b = _record(a.get("references")), _record(b.get("references"))
-    for role in sorted(set(refs_a) | set(refs_b)):
+    for role in _reference_roles(a, b):
         key = f"reference.{role}"
-        descriptor = merge_descriptors(key, descriptors_a.get(key), descriptors_b.get(key))
-        if not _relevant(key, descriptor, cell, definition, context_a, context_b, True):
-            continue
-        reasons.extend(_reference_reasons(key, descriptor, refs_a.get(role), refs_b.get(role)))
+        descriptor, relevant = _judge_key(prepared, key, True)
+        if relevant:
+            reasons.extend(_reference_reasons(key, descriptor, refs_a.get(role), refs_b.get(role)))
 
     # 8.2 revision
     rev_a = def_a.get("rev") if def_a is not None else None
@@ -299,22 +389,17 @@ def compare(
         )
 
     # 8.3 stratification
-    strata_a = side_a.axes_by_role.get("stratum", [])
-    strata_b = side_b.axes_by_role.get("stratum", [])
+    strata_a = prepared.side_a.axes_by_role.get("stratum", [])
+    strata_b = prepared.side_b.axes_by_role.get("stratum", [])
     for index, value in enumerate(cell.values("stratum")):
-        reasons.extend(
-            _stratum_reasons(a, b, strata_a[index], strata_b[index], value)
-        )
+        reasons.extend(_stratum_reasons(a, b, strata_a[index], strata_b[index], value))
 
     # 8.6 parameters and observations
-    params_a, obs_a = context_a
-    params_b, obs_b = context_b
-    keys = sorted(set(params_a) | set(obs_a) | set(params_b) | set(obs_b))
-    for key in keys:
-        descriptor = merge_descriptors(key, descriptors_a.get(key), descriptors_b.get(key))
-        if descriptor.compare in ("ignore", "pair"):
-            continue
-        if not _relevant(key, descriptor, cell, definition, context_a, context_b):
+    params_a, obs_a = prepared.context_a
+    params_b, obs_b = prepared.context_b
+    for key in _value_keys(a, b):
+        descriptor, relevant = _judge_key(prepared, key, False)
+        if descriptor.compare in ("ignore", "pair") or not relevant:
             continue
         value_a = params_a[key] if key in params_a else obs_a.get(key, MISSING)
         value_b = params_b[key] if key in params_b else obs_b.get(key, MISSING)
@@ -323,10 +408,39 @@ def compare(
             reasons.append(reason)
 
     # 8.7 population
-    shared, reason = _population(a, b, side_a, side_b, definition, items_a, items_b, per_item_a, per_item_b)
+    shared, reason = _population(
+        a, b, prepared.side_a, prepared.side_b, prepared.definition,
+        items_a, items_b, per_item_a, per_item_b,
+    )
     if reason is not None:
         reasons.append(reason)
     return _finish(reasons, shared)
+
+
+#: Hint of an ``identity_format`` reason (8.5).
+IDENTITY_FORMAT_HINT = "re-evaluate both with the same euler-eval version to compare them"
+
+
+def identity_scheme(reference: Any) -> str:
+    """``references.<role>.identityScheme``; ``""`` when absent (unspecified)."""
+    scheme = reference.get("identityScheme") if isinstance(reference, dict) else None
+    return scheme if isinstance(scheme, str) else ""
+
+
+def _parse_scheme(scheme: str) -> tuple:
+    family, slash, version = scheme.rpartition("/")
+    if slash and family and version.isdigit() and version.isascii():
+        return family, int(version)
+    return scheme, None
+
+
+def _recorded_fields_differ(ref_a: dict, ref_b: dict) -> bool:
+    """Whether modality or dataset.id / scope / split, non-null on both sides, differ."""
+    pairs = [(ref_a.get("modality"), ref_b.get("modality"))]
+    dataset_a, dataset_b = _record(ref_a.get("dataset")), _record(ref_b.get("dataset"))
+    for name in ("id", "scope", "split"):
+        pairs.append((dataset_a.get(name), dataset_b.get(name)))
+    return any(x is not None and y is not None and not json_equal(x, y) for x, y in pairs)
 
 
 def _reference_reasons(key: str, descriptor: MergedDescriptor, ref_a: Any, ref_b: Any) -> list:
@@ -338,6 +452,21 @@ def _reference_reasons(key: str, descriptor: MergedDescriptor, ref_a: Any, ref_b
                        hint=descriptor.hint, step=STEP_REFERENCES)]
     if identity_a == identity_b:
         return []
+    scheme_a, scheme_b = identity_scheme(ref_a), identity_scheme(ref_b)
+    if scheme_a != scheme_b:
+        if _recorded_fields_differ(ref_a, ref_b):
+            return [Reason("incomparable", "reference", label, f"{label} differs", key=key,
+                           hint=descriptor.hint, step=STEP_REFERENCES)]
+        family_a, version_a = _parse_scheme(scheme_a)
+        family_b, version_b = _parse_scheme(scheme_b)
+        older = (
+            version_a is not None and version_b is not None
+            and family_a == family_b and version_a != version_b
+        )
+        which = "an older" if older else "another"
+        return [Reason("incomparable", "identity_format", label,
+                       f"{label} identity recorded in {which} evaluation format", key=key,
+                       hint=IDENTITY_FORMAT_HINT, step=STEP_REFERENCES)]
     view_a, view_b = ref_a.get("view"), ref_b.get("view")
     if (
         isinstance(view_a, dict)

@@ -76,12 +76,12 @@
    "name": "legacy reference identity (section 10)",
    "input": {
     "modality": "depth",
-    "dataset": "cerema_cropped",
+    "dataset": "cerema",
     "scope": "depth",
     "split": null
    },
-   "canonical": "{\"dataset\":\"cerema_cropped\",\"modality\":\"depth\",\"scope\":\"depth\",\"split\":null}",
-   "hash": "sha256:c098486b3caed120e77f898a344a08a885ef7ff60808dcaa02a991e918118624"
+   "canonical": "{\"dataset\":\"cerema\",\"modality\":\"depth\",\"scope\":\"depth\",\"split\":null}",
+   "hash": "sha256:4fa98c353087e4fbdf292106a14c949ef7caf01e9e69efb56bce4bbb55f2b57c"
   }
  ],
  "definitionKeys": [
@@ -194,7 +194,7 @@
     "task": null,
     "references": {
      "gt": {
-      "identity": "sha256:c098486b3caed120e77f898a344a08a885ef7ff60808dcaa02a991e918118624"
+      "identity": "sha256:4fa98c353087e4fbdf292106a14c949ef7caf01e9e69efb56bce4bbb55f2b57c"
      }
     },
     "parameters": {
@@ -233,8 +233,8 @@
     },
     "metrics": {}
    },
-   "canonical": "{\"metrics\":{},\"parameters\":{\"depth.alignment.applied\":false,\"depth.cap.max_m\":38,\"depth.invalid.policy\":\"exclude_sentinel\",\"rays.fov_policy\":\"v2\",\"rgb.depth_bins.policy\":\"v2\",\"rgb.input.alignment_policy\":\"upscale\",\"sky.gt.masking\":false,\"sky.pred.fill\":false,\"sky.pred.masking\":false},\"references\":{\"gt\":{\"identity\":\"sha256:c098486b3caed120e77f898a344a08a885ef7ff60808dcaa02a991e918118624\"}},\"stratifications\":{\"depth.gt_range\":{\"after\":[\"depth.cap.max_m\"],\"closed\":\"left\",\"edges\":[0.01,3.8114157444218852,14.474749077755222,32],\"labels\":[\"near\",\"mid\",\"far\"],\"lastClosed\":true,\"scheme\":\"sqrt_equal_width\",\"total\":\"all\",\"variable\":\"gt_depth_m\"}},\"task\":null}",
-   "hash": "sha256:b84711d68c4e5f8cbc6b944e6db5522289667aaba0ed3b6b97b424758c8f98f5"
+   "canonical": "{\"metrics\":{},\"parameters\":{\"depth.alignment.applied\":false,\"depth.cap.max_m\":38,\"depth.invalid.policy\":\"exclude_sentinel\",\"rays.fov_policy\":\"v2\",\"rgb.depth_bins.policy\":\"v2\",\"rgb.input.alignment_policy\":\"upscale\",\"sky.gt.masking\":false,\"sky.pred.fill\":false,\"sky.pred.masking\":false},\"references\":{\"gt\":{\"identity\":\"sha256:4fa98c353087e4fbdf292106a14c949ef7caf01e9e69efb56bce4bbb55f2b57c\"}},\"stratifications\":{\"depth.gt_range\":{\"after\":[\"depth.cap.max_m\"],\"closed\":\"left\",\"edges\":[0.01,3.8114157444218852,14.474749077755222,32],\"labels\":[\"near\",\"mid\",\"far\"],\"lastClosed\":true,\"scheme\":\"sqrt_equal_width\",\"total\":\"all\",\"variable\":\"gt_depth_m\"}},\"task\":null}",
+   "hash": "sha256:ed0a2f9a94a678532e8445753ad6fa41d7449e3786fc3ce964202d10cb75eb25"
   }
  ]
 }

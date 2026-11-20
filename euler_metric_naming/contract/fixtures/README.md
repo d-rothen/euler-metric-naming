@@ -18,6 +18,8 @@ engine. Hashes are SHA-256 over the canonical text written beside them.
 | `globs.json` | `cases[]` `{pattern, name, match}`. |
 | `measures.json` | `measures[]` `{kind, a, b, d, phrase}` with label `L` (`d: null` = unmeasurable; compare `d` with tolerance 5e-7); `percent[]` `{d, text}`; `sig3[]` `{value, text}`. |
 | `legacy.json` | `cases[]` `{protocol, metricSet, meta, expected, descriptorKeys}`: `normalize(protocol, metricSet, meta)` without `descriptors` and `reducers` must equal `expected`; `descriptors` must be exactly the legacy table's descriptors of `descriptorKeys`, `reducers` the table's reducers. |
+| `references.json` | Reference identities across identity schemes (§8.5): `template` + `metricSet`; each case puts `a` and `b` under `references.gt` of the template, compares cell `metric` (both orders) and expects `tier`, `label`, `codes`, the first reason's `hint`. |
+| `relevance.json` | `cases[]` `{a, b, metric, keys}`: `relevant_keys` / `relevantKeys` of the contracts of `evals/<a>` and `evals/<b>` (`b` null: `a` alone) must equal `keys` (code-point order). |
 | `verdicts.json` | `cases[]` `{a, b, metric, tier, label, codes, shared, measures?, hint?, recompute?}`: load `evals/<a>` and `evals/<b>`, take item sets and per-item names from the files (`fileEvidence`), compare the cell `metric`. `codes` are the reason codes in order; `measures` the reasons with a measure, in order (`d` rounded to 6 decimals, tolerance 5e-7); `hint` the first reason's hint; `recompute` the aggregate recomputed on the shared items of each side (tolerance 1e-9). |
 | `evals/*.json` | Complete `eval.json` files, importable by euler-view (camelCase `metricSet` envelope, nested metric tree, `per_file_metrics` with `children` / `files[{id, metrics}]`). |
 
@@ -46,7 +48,7 @@ offset; the `count` weights are `1000 + 100·k`.
 | `d10` | `d1` plus an undescribed parameter `depth.debug.tile_px` |
 | `d10u`, `d10v` | descriptors with an unknown role (`tuning`), with and without `compare: ignore` |
 | `u1`, `u2` | schema `3.0` (unsupported major); `u2` with another cap |
-| `l1`–`l4` | legacy schema 1.3 (euler-eval 2.47): `l1` cropped/none 734×1730 rev 3, `l2` vae_crop 728×1728, `l3` a per-file subset, `l4` without per-file metrics |
+| `l1`–`l5` | legacy schema 1.3 (euler-eval 2.47), GT dataset `cerema`: `l1` cropped/none 734×1730 rev 3, `l2` vae_crop 728×1728, `l3` a per-file subset, `l4` without per-file metrics, `l5` another GT dataset (`kitti`) |
 | `m1`, `m3` | legacy muses-like pair, metrics revision 1 vs 3, hierarchical per-file ids (`night~frame-0`) |
 | `r1`–`r4` | RGB-like files without a reduction axis: metrics carry an implicit `reducer` (`image_mean` for PSNR and the binned MAE, `dataset` for FID); fixed GT-depth bins `[0, 1, 5, null]` (open far bin). `r2` a subset with other values, `r3` edges `[0, 1, 10, null]`, `r4` `[null, 1, 5, null]` |
 | `s1`–`s6` | a synthetic modality (`audio.eval`) no vocabulary knows: every term comes from the files' own snapshots. `s2` truncated audio, `s3` sample rate, `s4` subset, `s5` SNR edges, `s6` denoising that does not apply |

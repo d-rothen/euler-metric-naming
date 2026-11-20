@@ -12,6 +12,7 @@
       "split"
     ],
     "modalityField": "modality",
+    "identityScheme": "euler.reference/1",
     "roleRenames": {
       "input_rgb": "input"
     }

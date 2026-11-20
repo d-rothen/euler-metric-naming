@@ -108,7 +108,7 @@
   "schemaVersion": "1.3",
   "parameters": {
    "reference.gt.modality": "depth",
-   "reference.gt.dataset": "cerema_cropped",
+   "reference.gt.dataset": "cerema",
    "reference.gt.scope": "depth",
    "reference.gt.split": null,
    "reference.calibration.dataset": null,

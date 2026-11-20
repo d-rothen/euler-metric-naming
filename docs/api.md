@@ -318,7 +318,7 @@ protocol = builder.build()                           # JSON-ready; raises Protoc
 | `param(key, value, *, descriptor=None)` | a parameter (scalar or ≤ 64 scalars) and its descriptor snapshot |
 | `params(mapping)` | several vocabulary parameters |
 | `observe(key, value, *, descriptor=None)` | an observation |
-| `reference(role, *, identity, modality=None, dataset=None, manifest=None, view=None, descriptor=None)` | `references.<role>` and the `reference.<role>` descriptor |
+| `reference(role, *, identity, modality=None, dataset=None, manifest=None, view=None, descriptor=None, identity_scheme="euler.reference/2")` | `references.<role>` (with `identityScheme`) and the `reference.<role>` descriptor |
 | `population(ids, *, unit=None, accounting=None, items=True)` | `population` (NFC ids, `count`, `manifest`); `items.ids` |
 | `stratification(id, mapping)` | a stratification (`sqrt_stratification(lo, hi)` builds euler-eval's benchmark bins) |
 | `axis(name, role, *, stratification=None)` | the role of a metricSet axis |
@@ -358,6 +358,7 @@ verdict.to_dict()
 | `recompute(op, values, items=None, weights=None, form=None)` | mean / median / pool of per-item values |
 | `recompute_cell(contract, eval_file, metric_name, items=None)` | an aggregate recomputed on (shared) items |
 | `per_item_name(contract, metric_name)` | the per-item name of an aggregate |
+| `relevant_keys(a, b, metric_name)` | §8.4 (informative): the `reference.<role>`, parameter and observation keys of either contract relevant to the cell, as the engine judges them; `b=None` judges `a` alone |
 | `definition_key(contract)`, `definition_key_object(contract)` | §9.4 grouping key |
 | `manifest_hash(ids)`, `hash_value(value)`, `canonicalize(value)` | §9 hashes and RFC 8785 text |
 | `evaluate_condition(cond, parameters, observations)` | §7 (True / False / None) |
@@ -373,7 +374,8 @@ verdict.to_dict()
 vocabularies, legacy table, schemas), and `euler-contract-node.ts` (optional
 `node:crypto` wiring). The API mirrors the Python one in camelCase:
 `normalize`, `loadEvalFile`, `fileEvidence`, `compare(a, b, name, {itemsA,
-itemsB, perItemA, perItemB})`, `compareFiles`, `recompute`, `recomputeCell`,
+itemsB, perItemA, perItemB})`, `compareFiles`, `relevantKeys(a, b | null,
+name)`, `recompute`, `recomputeCell`,
 `definitionKey`, `manifestHash`, `canonicalize`, `evaluateCondition`,
 `measure`, `phrase`. Hash functions take an optional
 `sha256Hex(bytes: Uint8Array) => string`; a pure-TS SHA-256 is the default.

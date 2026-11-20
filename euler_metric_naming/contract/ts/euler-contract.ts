@@ -32,6 +32,7 @@ export type Tier = 'same' | 'paired' | 'comparable' | 'incomparable';
 export type ReasonCode =
 	| 'schema'
 	| 'reference'
+	| 'identity_format'
 	| 'revision'
 	| 'not_recorded'
 	| 'stratification'
@@ -77,6 +78,8 @@ export interface Reference {
 	modality?: string | null;
 	dataset?: { [key: string]: unknown };
 	identity: string;
+	/** How `identity` was computed, `<family>/<integer>` (euler v2: `euler.reference/2`); absent = unspecified. */
+	identityScheme?: string;
 	manifest?: { hash?: string; count?: number };
 	view?: { source: string; region: number[] };
 	[extra: string]: unknown;
@@ -1154,7 +1157,13 @@ export function normalize(protocol: unknown, metricSet?: unknown, meta?: unknown
 export interface LegacyTable {
 	id: string;
 	version: string;
-	references: { prefix: string; fields: string[]; modalityField: string; roleRenames: { [role: string]: string } };
+	references: {
+		prefix: string;
+		fields: string[];
+		modalityField: string;
+		identityScheme: string;
+		roleRenames: { [role: string]: string };
+	};
 	population: { count: string };
 	parameters: { [v1: string]: string };
 	observations: { [v1: string]: string };
@@ -1270,6 +1279,7 @@ export function normalizeLegacy(protocol: unknown, metricSet?: unknown, meta?: u
 		if (modality !== null) reference.modality = modality;
 		reference.dataset = { id: get(values, 'dataset'), scope: get(values, 'scope'), split: get(values, 'split') };
 		reference.identity = hashValue(identitySource);
+		reference.identityScheme = spec.identityScheme;
 		contract.references[name] = reference as unknown as Reference;
 		describe(`reference.${name}`);
 	}
@@ -1684,6 +1694,104 @@ function relevant(
 	return !mergedSkipped(descriptor, contextA, contextB);
 }
 
+interface Prepared {
+	sideA: Side;
+	sideB: Side;
+	cell: Cell;
+	defA: Rec | null;
+	defB: Rec | null;
+	definition: Rec;
+	contextA: Context;
+	contextB: Context;
+	descriptorsA: Rec;
+	descriptorsB: Rec;
+}
+
+/** 8.1 for a supported pair: the prepared cell, or the schema reason. */
+function prepare(a: Rec, b: Rec, metricName: string): Prepared | Found {
+	const sideA = decomposeCell(a, metricName);
+	const sideB = decomposeCell(b, metricName);
+	if (sideA === null || sideB === null) {
+		return makeReason('incomparable', 'schema', metricName, 'metric name does not decompose', STEP_SCHEMA);
+	}
+	if (sideA.cell.base !== sideB.cell.base || !jsonEqual(sideA.cell.roles, sideB.cell.roles)) {
+		return makeReason('incomparable', 'schema', metricName, 'metric name decomposes differently', STEP_SCHEMA);
+	}
+	const base = sideA.cell.base;
+	const defA = definitionOf(a, base);
+	const defB = definitionOf(b, base);
+	return {
+		sideA,
+		sideB,
+		cell: sideA.cell,
+		defA,
+		defB,
+		definition: mergedDefinition(defA, defB),
+		contextA: [rec(a.parameters), rec(a.observations)],
+		contextB: [rec(b.parameters), rec(b.observations)],
+		descriptorsA: rec(a.descriptors),
+		descriptorsB: rec(b.descriptors)
+	};
+}
+
+function isPrepared(value: Prepared | Found): value is Prepared {
+	return 'cell' in value;
+}
+
+/** [merged descriptor, relevant] of a key under 8.4. */
+function judgeKey(prepared: Prepared, key: string, reference: boolean): [MergedDescriptor, boolean] {
+	const descriptor = mergeDescriptors(key, prepared.descriptorsA[key], prepared.descriptorsB[key]);
+	const isRelevant = relevant(
+		key,
+		descriptor,
+		prepared.cell,
+		prepared.definition,
+		prepared.contextA,
+		prepared.contextB,
+		reference
+	);
+	return [descriptor, isRelevant];
+}
+
+function referenceRoles(a: Rec, b: Rec): string[] {
+	return sortedCodePoints(new Set([...Object.keys(rec(a.references)), ...Object.keys(rec(b.references))]));
+}
+
+function valueKeys(a: Rec, b: Rec): string[] {
+	const keys = new Set<string>();
+	for (const contract of [a, b]) {
+		for (const key of Object.keys(rec(contract.parameters))) keys.add(key);
+		for (const key of Object.keys(rec(contract.observations))) keys.add(key);
+	}
+	return sortedCodePoints(keys);
+}
+
+/**
+ * Keys relevant to a metric cell under section 8.4, exactly as `compare` judges them:
+ * the `reference.<role>`, parameter and observation keys of either contract, in
+ * code-point order. With `b = null` the single contract is judged on its own.
+ * Relevance does not look at `compare`. For an unsupported schema major every
+ * parameter key is relevant; a name that does not decompose has none.
+ */
+export function relevantKeys(a: Contract | Rec, b: Contract | Rec | null, metricName: string): string[] {
+	const ca = a as Rec;
+	const cb = (b ?? a) as Rec;
+	if (!(isSupported(ca) && isSupported(cb))) {
+		return sortedCodePoints(new Set([...Object.keys(rec(ca.parameters)), ...Object.keys(rec(cb.parameters))]));
+	}
+	const prepared = prepare(ca, cb, metricName);
+	if (!isPrepared(prepared)) return [];
+	const keys = new Set<string>();
+	for (const role of referenceRoles(ca, cb)) {
+		const key = `reference.${role}`;
+		if (judgeKey(prepared, key, true)[1]) keys.add(key);
+	}
+	for (const key of valueKeys(ca, cb)) {
+		if (judgeKey(prepared, key, false)[1]) keys.add(key);
+	}
+	return sortedCodePoints(keys);
+}
+
 /** Judge metric cell `metricName` of normalized contracts `a` and `b` (section 8). */
 export function compare(a: Contract | Rec, b: Contract | Rec, metricName: string, options: CompareOptions = {}): Verdict {
 	const ca = a as Rec;
@@ -1691,36 +1799,20 @@ export function compare(a: Contract | Rec, b: Contract | Rec, metricName: string
 	if (!(isSupported(ca) && isSupported(cb))) return unsupported(ca, cb);
 
 	// 8.1 cell
-	const sideA = decomposeCell(ca, metricName);
-	const sideB = decomposeCell(cb, metricName);
-	if (sideA === null || sideB === null) {
-		return finish([makeReason('incomparable', 'schema', metricName, 'metric name does not decompose', STEP_SCHEMA)], null);
-	}
-	if (sideA.cell.base !== sideB.cell.base || !jsonEqual(sideA.cell.roles, sideB.cell.roles)) {
-		return finish(
-			[makeReason('incomparable', 'schema', metricName, 'metric name decomposes differently', STEP_SCHEMA)],
-			null
-		);
-	}
-	const cell = sideA.cell;
+	const prepared = prepare(ca, cb, metricName);
+	if (!isPrepared(prepared)) return finish([prepared], null);
+	const cell = prepared.cell;
 	const base = cell.base;
-	const defA = definitionOf(ca, base);
-	const defB = definitionOf(cb, base);
-	const definition = mergedDefinition(defA, defB);
-	const contextA: Context = [rec(ca.parameters), rec(ca.observations)];
-	const contextB: Context = [rec(cb.parameters), rec(cb.observations)];
-	const descriptorsA = rec(ca.descriptors);
-	const descriptorsB = rec(cb.descriptors);
+	const { defA, defB } = prepared;
 	const reasons: Found[] = [];
 
 	// 8.5 references
 	const refsA = rec(ca.references);
 	const refsB = rec(cb.references);
-	for (const role of sortedCodePoints(new Set([...Object.keys(refsA), ...Object.keys(refsB)]))) {
+	for (const role of referenceRoles(ca, cb)) {
 		const key = `reference.${role}`;
-		const descriptor = mergeDescriptors(key, descriptorsA[key], descriptorsB[key]);
-		if (!relevant(key, descriptor, cell, definition, contextA, contextB, true)) continue;
-		reasons.push(...referenceReasons(key, descriptor, refsA[role], refsB[role]));
+		const [descriptor, isRelevant] = judgeKey(prepared, key, true);
+		if (isRelevant) reasons.push(...referenceReasons(key, descriptor, refsA[role], refsB[role]));
 	}
 
 	// 8.2 revision
@@ -1743,22 +1835,18 @@ export function compare(a: Contract | Rec, b: Contract | Rec, metricName: string
 	}
 
 	// 8.3 stratification
-	const strataA = sideA.axesByRole.stratum ?? [];
-	const strataB = sideB.axesByRole.stratum ?? [];
+	const strataA = prepared.sideA.axesByRole.stratum ?? [];
+	const strataB = prepared.sideB.axesByRole.stratum ?? [];
 	cellValues(cell, 'stratum').forEach((value, index) => {
 		reasons.push(...stratumReasons(ca, cb, strataA[index] as string, strataB[index] as string, value));
 	});
 
 	// 8.6 parameters and observations
-	const [paramsA, obsA] = contextA;
-	const [paramsB, obsB] = contextB;
-	const keys = sortedCodePoints(
-		new Set([...Object.keys(paramsA), ...Object.keys(obsA), ...Object.keys(paramsB), ...Object.keys(obsB)])
-	);
-	for (const key of keys) {
-		const descriptor = mergeDescriptors(key, descriptorsA[key], descriptorsB[key]);
-		if (descriptor.compare === 'ignore' || descriptor.compare === 'pair') continue;
-		if (!relevant(key, descriptor, cell, definition, contextA, contextB)) continue;
+	const [paramsA, obsA] = prepared.contextA;
+	const [paramsB, obsB] = prepared.contextB;
+	for (const key of valueKeys(ca, cb)) {
+		const [descriptor, isRelevant] = judgeKey(prepared, key, false);
+		if (descriptor.compare === 'ignore' || descriptor.compare === 'pair' || !isRelevant) continue;
 		const valueA = hasOwn(paramsA, key) ? paramsA[key] : hasOwn(obsA, key) ? obsA[key] : MISSING;
 		const valueB = hasOwn(paramsB, key) ? paramsB[key] : hasOwn(obsB, key) ? obsB[key] : MISSING;
 		const reason = parameterReason(key, descriptor, valueA, valueB);
@@ -1766,11 +1854,36 @@ export function compare(a: Contract | Rec, b: Contract | Rec, metricName: string
 	}
 
 	// 8.7 population
-	const [shared, reason] = population(ca, cb, sideA, sideB, definition, options);
+	const [shared, reason] = population(ca, cb, prepared.sideA, prepared.sideB, prepared.definition, options);
 	if (reason !== null) reasons.push(reason);
 	return finish(reasons, shared);
 }
 
+/** Hint of an `identity_format` reason (8.5). */
+export const IDENTITY_FORMAT_HINT = 're-evaluate both with the same euler-eval version to compare them';
+
+/** `references.<role>.identityScheme`; "" when absent (unspecified). */
+export function identityScheme(reference: unknown): string {
+	const scheme = isRecord(reference) ? reference.identityScheme : null;
+	return typeof scheme === 'string' ? scheme : '';
+}
+
+function parseScheme(scheme: string): [string, number | null] {
+	const slash = scheme.lastIndexOf('/');
+	if (slash > 0) {
+		const version = scheme.slice(slash + 1);
+		if (/^[0-9]+$/.test(version)) return [scheme.slice(0, slash), Number(version)];
+	}
+	return [scheme, null];
+}
+
+function recordedFieldsDiffer(refA: Rec, refB: Rec): boolean {
+	const pairs: [unknown, unknown][] = [[get(refA, 'modality'), get(refB, 'modality')]];
+	const datasetA = rec(refA.dataset);
+	const datasetB = rec(refB.dataset);
+	for (const name of ['id', 'scope', 'split']) pairs.push([get(datasetA, name), get(datasetB, name)]);
+	return pairs.some(([x, y]) => x !== null && y !== null && !jsonEqual(x, y));
+}
 
 function referenceReasons(key: string, descriptor: MergedDescriptor, refA: unknown, refB: unknown): Found[] {
 	const label = descriptor.label;
@@ -1785,6 +1898,32 @@ function referenceReasons(key: string, descriptor: MergedDescriptor, refA: unkno
 		];
 	}
 	if (identityA === identityB) return [];
+	const schemeA = identityScheme(refA);
+	const schemeB = identityScheme(refB);
+	if (schemeA !== schemeB) {
+		if (recordedFieldsDiffer(refA as Rec, refB as Rec)) {
+			return [
+				makeReason('incomparable', 'reference', label, `${label} differs`, STEP_REFERENCES, {
+					key,
+					hint: descriptor.hint
+				})
+			];
+		}
+		const [familyA, versionA] = parseScheme(schemeA);
+		const [familyB, versionB] = parseScheme(schemeB);
+		const older = versionA !== null && versionB !== null && familyA === familyB && versionA !== versionB;
+		const which = older ? 'an older' : 'another';
+		return [
+			makeReason(
+				'incomparable',
+				'identity_format',
+				label,
+				`${label} identity recorded in ${which} evaluation format`,
+				STEP_REFERENCES,
+				{ key, hint: IDENTITY_FORMAT_HINT }
+			)
+		];
+	}
 	const viewA = (refA as Rec).view;
 	const viewB = (refB as Rec).view;
 	if (isRecord(viewA) && isRecord(viewB) && typeof viewA.source === 'string' && viewA.source === viewB.source) {

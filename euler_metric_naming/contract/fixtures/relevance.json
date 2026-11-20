@@ -1,0 +1,187 @@
+{
+ "description": "relevant_keys / relevantKeys (docs/contract.md 8.4, informative helper): the reference.<role>, parameter and observation keys of either contract relevant to the metric cell, in code-point order. b null = the single contract judged on its own.",
+ "cases": [
+  {
+   "name": "d1 alone, metric space: fit keys do not apply, resize and mask keys do not apply",
+   "a": "d1.json",
+   "b": null,
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "keys": [
+    "depth.alignment.applied",
+    "depth.alignment.mode",
+    "depth.benchmark.range_m",
+    "depth.cap.clipped",
+    "depth.cap.max_m",
+    "depth.conversion",
+    "depth.input_space",
+    "depth.invalid.policy",
+    "domain.region",
+    "prediction.resample",
+    "reference.gt",
+    "sky.gt.masking",
+    "sky.pred.fill",
+    "sky.pred.masking",
+    "spatial.method",
+    "spatial.policy"
+   ]
+  },
+  {
+   "name": "d1 alone, native space: alignment applied only affects the metric space",
+   "a": "d1.json",
+   "b": null,
+   "metric": "depth.eval.native.standard.image_mean.absrel",
+   "keys": [
+    "depth.alignment.mode",
+    "depth.benchmark.range_m",
+    "depth.cap.clipped",
+    "depth.cap.max_m",
+    "depth.conversion",
+    "depth.input_space",
+    "depth.invalid.policy",
+    "domain.region",
+    "prediction.resample",
+    "reference.gt",
+    "sky.gt.masking",
+    "sky.pred.fill",
+    "sky.pred.masking",
+    "spatial.method",
+    "spatial.policy"
+   ]
+  },
+  {
+   "name": "legacy alone: revision policies of other modalities are not relevant to depth",
+   "a": "l1.json",
+   "b": null,
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "keys": [
+    "depth.alignment.applied",
+    "depth.alignment.mode",
+    "depth.benchmark.range_m",
+    "depth.cap.max_m",
+    "depth.invalid.policy",
+    "domain.grid",
+    "reference.gt",
+    "sky.gt.masking",
+    "sky.pred.fill",
+    "sky.pred.masking",
+    "spatial.method"
+   ]
+  },
+  {
+   "name": "a fitted, resized side makes fit and resize keys apply",
+   "a": "d6.json",
+   "b": "d4.json",
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "keys": [
+    "depth.alignment.applied",
+    "depth.alignment.fit",
+    "depth.alignment.fit_trim",
+    "depth.alignment.mode",
+    "depth.benchmark.range_m",
+    "depth.cap.clipped",
+    "depth.cap.max_m",
+    "depth.conversion",
+    "depth.input_space",
+    "depth.invalid.policy",
+    "domain.region",
+    "prediction.resample",
+    "reference.gt",
+    "sky.gt.masking",
+    "sky.pred.fill",
+    "sky.pred.masking",
+    "spatial.method",
+    "spatial.policy",
+    "spatial.resize_target"
+   ]
+  },
+  {
+   "name": "cap inert on both sides",
+   "a": "d1b.json",
+   "b": "d5b.json",
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "keys": [
+    "depth.alignment.applied",
+    "depth.alignment.mode",
+    "depth.benchmark.range_m",
+    "depth.cap.clipped",
+    "depth.conversion",
+    "depth.input_space",
+    "depth.invalid.policy",
+    "domain.region",
+    "prediction.resample",
+    "reference.gt",
+    "sky.gt.masking",
+    "sky.pred.fill",
+    "sky.pred.masking",
+    "spatial.method",
+    "spatial.policy"
+   ]
+  },
+  {
+   "name": "synthetic modality: denoising does not apply",
+   "a": "s1.json",
+   "b": "s6.json",
+   "metric": "audio.eval.clip_mean.sisdr",
+   "keys": [
+    "audio.mode",
+    "audio.sample_rate_hz",
+    "audio.truncated_s",
+    "reference.gt"
+   ]
+  },
+  {
+   "name": "RGB PSNR: FID backend and depth-bin policy affect other cells",
+   "a": "r1.json",
+   "b": null,
+   "metric": "rgb.eval.image_quality.psnr",
+   "keys": [
+    "reference.gt",
+    "spatial.method",
+    "spatial.uniform"
+   ]
+  },
+  {
+   "name": "RGB FID: the FID backend is relevant",
+   "a": "r1.json",
+   "b": null,
+   "metric": "rgb.eval.image_quality.fid",
+   "keys": [
+    "reference.gt",
+    "rgb.fid.backend",
+    "spatial.method",
+    "spatial.uniform"
+   ]
+  },
+  {
+   "name": "a name that does not decompose has no relevant keys",
+   "a": "d1.json",
+   "b": null,
+   "metric": "depth.eval.bogus.absrel",
+   "keys": []
+  },
+  {
+   "name": "unsupported major: every parameter",
+   "a": "u1.json",
+   "b": null,
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "keys": [
+    "depth.alignment.applied",
+    "depth.alignment.fit",
+    "depth.alignment.fit_trim",
+    "depth.alignment.mode",
+    "depth.benchmark.range_m",
+    "depth.cap.max_m",
+    "depth.conversion",
+    "depth.input_space",
+    "depth.invalid.policy",
+    "sky.gt.masking",
+    "sky.pred.fill",
+    "sky.pred.masking",
+    "spatial.mask_resample",
+    "spatial.method",
+    "spatial.policy",
+    "spatial.resize_target"
+   ]
+  }
+ ]
+}

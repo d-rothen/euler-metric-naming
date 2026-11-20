@@ -26,6 +26,13 @@
 - The frozen schema-1 legacy adapter (`contract/legacy/protocol-1.json`):
   euler-eval ≤ 2.47 files normalize into v2 contracts.
 - `load_eval_file`: whole `eval.json` files flattened as euler-view does.
+- `references.<role>.identityScheme` (`euler.reference/2`; the legacy
+  adapter's `euler.reference/1`): references whose identities come from
+  different schemes are reported as `identity recorded in an older / another
+  evaluation format` (reason code `identity_format`) unless what both record
+  differs.
+- `relevant_keys` / `relevantKeys`: the keys relevant to a metric cell under
+  §8.4, from the engine's own code path.
 - Open-ended stratification bins (`null` first / last edge) and an implicit
   per-metric `reducer` for cells without a reduction axis (RGB, depth image
   quality, FID), so such metrics pair on shared files too.
@@ -35,7 +42,7 @@
   data included, type-checked under strict TypeScript and runnable with
   Node's type stripping.
 - Conformance fixtures (`contract/fixtures/`) both implementations pass,
-  including 32 eval files and 48 hand-derived verdicts.
+  including 33 eval files and 49 hand-derived verdicts.
 - Package data: schemas, vocabularies, the legacy table, the TS artifact and
   the fixtures ship in the wheel.
 

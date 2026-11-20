@@ -225,17 +225,29 @@
       "codes": ["parameter"], "shared": null
     },
     {
-      "name": "legacy vs v2: identities never match",
+      "name": "legacy vs v2: same GT, identities in different schemes",
       "a": "l1.json", "b": "d1.json",
       "metric": "depth.eval.metric.standard.image_mean.absrel",
-      "tier": "incomparable", "label": "not comparable · GT differs",
-      "codes": ["reference", "not_recorded", "not_recorded", "not_recorded", "not_recorded"],
-      "shared": null
+      "tier": "incomparable",
+      "label": "not comparable · GT identity recorded in an older evaluation format",
+      "codes": ["identity_format", "not_recorded", "not_recorded", "not_recorded", "not_recorded"],
+      "shared": null,
+      "hint": "re-evaluate both with the same euler-eval version to compare them"
     },
     {
       "name": "legacy vs v2: the benchmark bins themselves agree",
       "a": "l1.json", "b": "d1.json",
       "metric": "depth.eval.metric.standard.image_mean.near.absrel",
+      "tier": "incomparable",
+      "label": "not comparable · GT identity recorded in an older evaluation format",
+      "codes": ["identity_format", "not_recorded", "not_recorded", "not_recorded", "not_recorded"],
+      "shared": null,
+      "hint": "re-evaluate both with the same euler-eval version to compare them"
+    },
+    {
+      "name": "legacy vs v2: the recorded dataset differs",
+      "a": "l5.json", "b": "d1.json",
+      "metric": "depth.eval.metric.standard.image_mean.absrel",
       "tier": "incomparable", "label": "not comparable · GT differs",
       "codes": ["reference", "not_recorded", "not_recorded", "not_recorded", "not_recorded"],
       "shared": null

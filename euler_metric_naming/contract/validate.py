@@ -31,6 +31,7 @@ from .strata import valid_edges
 
 _HASH_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _VERSION_RE = re.compile(r"^(\d+)\.(\d+)$")
+_SCHEME_RE = re.compile(r"^[^/\s]+/[0-9]+$")
 
 
 class ProtocolValidationError(ValueError):
@@ -255,6 +256,9 @@ def protocol_problems(protocol: Any) -> list[str]:
             continue
         if not isinstance(reference.get("identity"), str) or not reference["identity"]:
             problems.append(f"{path}.identity is required")
+        scheme = reference.get("identityScheme")
+        if scheme is not None and not (isinstance(scheme, str) and _SCHEME_RE.match(scheme)):
+            problems.append(f"{path}.identityScheme must have the form <family>/<integer>")
         view = reference.get("view")
         if view is not None:
             region = view.get("region") if isinstance(view, dict) else None

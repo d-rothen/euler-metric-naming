@@ -11,6 +11,7 @@ import pytest
 from euler_metric_naming.contract import (
     CanonicalizationError,
     canonicalize,
+    compare,
     compare_files,
     definition_key,
     definition_key_object,
@@ -28,6 +29,7 @@ from euler_metric_naming.contract import (
     normalize,
     phrase,
     recompute_cell,
+    relevant_keys,
 )
 
 FIXTURES = Path(__file__).resolve().parents[2] / "euler_metric_naming" / "contract" / "fixtures"
@@ -233,3 +235,40 @@ def test_normalize_does_not_mutate_its_input():
     before = copy.deepcopy(payload)
     normalize(payload["protocol"], payload["metricSet"], payload["meta"])
     assert payload == before
+
+
+# -- reference identity schemes (8.5) ---------------------------------------------------
+
+REFERENCES = _load("references.json")
+
+
+@pytest.mark.parametrize("case", REFERENCES["cases"], ids=_ids(REFERENCES["cases"]))
+def test_reference_identity_schemes(case):
+    def contract(reference):
+        protocol = copy.deepcopy(REFERENCES["template"])
+        protocol["references"] = {"gt": reference}
+        return normalize(protocol, REFERENCES["metricSet"])
+
+    for a, b in ((case["a"], case["b"]), (case["b"], case["a"])):
+        verdict = compare(contract(a), contract(b), REFERENCES["metric"])
+        assert verdict.tier == case["tier"]
+        assert verdict.label == case["label"]
+        assert verdict.codes == case["codes"]
+        assert (verdict.reasons[0].hint if verdict.reasons else None) == case["hint"]
+
+
+# -- relevance (8.4) ---------------------------------------------------------------------
+
+RELEVANCE = _load("relevance.json")
+
+
+@pytest.mark.parametrize("case", RELEVANCE["cases"], ids=_ids(RELEVANCE["cases"]))
+def test_relevant_keys(case):
+    file_a = load_eval_file(FIXTURES / "evals" / case["a"])
+    file_b = load_eval_file(FIXTURES / "evals" / case["b"]) if case["b"] else None
+    contract_b = file_b.contract if file_b is not None else None
+    assert relevant_keys(file_a.contract, contract_b, case["metric"]) == case["keys"]
+    if file_b is not None:
+        assert relevant_keys(contract_b, file_a.contract, case["metric"]) == case["keys"]
+    else:
+        assert relevant_keys(file_a.contract, file_a.contract, case["metric"]) == case["keys"]

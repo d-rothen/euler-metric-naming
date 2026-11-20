@@ -120,7 +120,8 @@
      "split": null,
      "scope": "rgb"
     },
-    "identity": "sha256:77c6b3bbdc4f1e3b13e5572e6c7dbe1e4cb6099b27be4ac45aa75c5724df3ac1"
+    "identity": "sha256:77c6b3bbdc4f1e3b13e5572e6c7dbe1e4cb6099b27be4ac45aa75c5724df3ac1",
+    "identityScheme": "euler.reference/2"
    }
   },
   "population": {

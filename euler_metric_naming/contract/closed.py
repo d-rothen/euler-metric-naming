@@ -59,6 +59,7 @@ TIERS = ("same", "paired", "comparable", "incomparable")
 REASON_CODES = (
     "schema",
     "reference",
+    "identity_format",
     "revision",
     "not_recorded",
     "stratification",
@@ -69,6 +70,12 @@ REASON_CODES = (
     "population_partial",
     "population_unknown",
 )
+
+#: ``references.<role>.identityScheme`` of euler's v2 reference identities
+#: (``sha256(JCS({dataset, manifest, head}))``) and of the legacy adapter's
+#: (``sha256(JCS({modality, dataset, scope, split}))``), §4.3 / §10.
+REFERENCE_IDENTITY_SCHEME = "euler.reference/2"
+LEGACY_REFERENCE_IDENTITY_SCHEME = "euler.reference/1"
 
 #: The item id scheme of §4.4.
 ITEM_ID_SCHEME = "euler.item_id/1"
@@ -106,6 +113,8 @@ def closed_sets() -> dict:
         "tiers": list(TIERS),
         "reasonCodes": list(REASON_CODES),
         "itemIdScheme": ITEM_ID_SCHEME,
+        "referenceIdentityScheme": REFERENCE_IDENTITY_SCHEME,
+        "legacyReferenceIdentityScheme": LEGACY_REFERENCE_IDENTITY_SCHEME,
         "itemIdSeparator": ITEM_ID_SEPARATOR,
         "parameterLimits": {
             "maxParameters": MAX_PARAMETERS,

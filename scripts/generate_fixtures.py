@@ -268,7 +268,7 @@ def depth_v1(
     items=DAY,
     offset=0.0,
     fid=21.5,
-    dataset="cerema_cropped",
+    dataset="cerema",
     split=None,
     calibration=None,
     resolution=(734, 1730),
@@ -636,6 +636,7 @@ def build() -> dict:
                            spatial="vae_crop")
     files["l3"] = depth_v1(items=DAY[:3])
     files["l4"] = depth_v1(per_file=False)
+    files["l5"] = depth_v1(dataset="kitti")
     muses = dict(dataset="muses", split="test", resolution=(1080, 1920), gt_dims=(1080, 1920),
                  pred_dims=(1080, 1920), bench=(0.01, 80.0), boundaries=False, sky_depth=None,
                  calibration={"dataset": "muses", "scope": "calibration", "split": "test"},

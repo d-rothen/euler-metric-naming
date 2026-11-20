@@ -335,6 +335,7 @@
      "scope": "depth"
     },
     "identity": "sha256:3e2d9ad9aa0e20c111c27cb158442bb2a5a1b9ef138ee33676fc85a2941ab13d",
+    "identityScheme": "euler.reference/2",
     "manifest": {
      "hash": "sha256:41dd025c4ed814a30f01343c51bdeaf96e2d8020da71e1f9b2cd811df32e5412",
      "count": 1600

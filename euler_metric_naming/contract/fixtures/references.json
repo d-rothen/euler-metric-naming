@@ -1,0 +1,381 @@
+{
+ "description": "Reference identities across identity schemes (docs/contract.md 8.5). Each case is two contracts built from template with references {gt: a} and {gt: b}; compare the cell metric (no item sets are needed: the template records equal population manifests). Expect tier, label, reason codes and the first reason's hint (null = none).",
+ "template": {
+  "schemaVersion": "2.0",
+  "parameters": {},
+  "descriptors": {
+   "reference.gt": {
+    "label": "GT",
+    "role": "reference"
+   }
+  },
+  "population": {
+   "manifest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  }
+ },
+ "metricSet": {
+  "metricNamespace": "x.eval",
+  "axes": {}
+ },
+ "metric": "x.eval.score",
+ "cases": [
+  {
+   "name": "same scheme, identities differ",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/2",
+    "modality": "depth",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/2",
+    "modality": "depth",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT differs",
+   "codes": [
+    "reference"
+   ],
+   "hint": null
+  },
+  {
+   "name": "identities equal, schemes differ",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/1"
+   },
+   "b": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/2"
+   },
+   "tier": "same",
+   "label": "same protocol",
+   "codes": [],
+   "hint": null
+  },
+  {
+   "name": "v1 vs v2, same recorded GT",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/1",
+    "modality": "depth",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/2",
+    "modality": "depth",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null,
+     "variant": "cropped"
+    }
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT identity recorded in an older evaluation format",
+   "codes": [
+    "identity_format"
+   ],
+   "hint": "re-evaluate both with the same euler-eval version to compare them"
+  },
+  {
+   "name": "v1 vs v2, dataset id differs",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/1",
+    "modality": "depth",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/2",
+    "modality": "depth",
+    "dataset": {
+     "id": "kitti",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT differs",
+   "codes": [
+    "reference"
+   ],
+   "hint": null
+  },
+  {
+   "name": "v1 vs v2, scope differs",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/1",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/2",
+    "dataset": {
+     "id": "cerema",
+     "scope": "rgb",
+     "split": null
+    }
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT differs",
+   "codes": [
+    "reference"
+   ],
+   "hint": null
+  },
+  {
+   "name": "v1 vs v2, modality differs",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/1",
+    "modality": "depth"
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/2",
+    "modality": "sparse_depth"
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT differs",
+   "codes": [
+    "reference"
+   ],
+   "hint": null
+  },
+  {
+   "name": "a split recorded on one side only is not checked",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/1",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/2",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": "test"
+    }
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT identity recorded in an older evaluation format",
+   "codes": [
+    "identity_format"
+   ],
+   "hint": "re-evaluate both with the same euler-eval version to compare them"
+  },
+  {
+   "name": "schemes differ, nothing checkable",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/3"
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/1"
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT identity recorded in an older evaluation format",
+   "codes": [
+    "identity_format"
+   ],
+   "hint": "re-evaluate both with the same euler-eval version to compare them"
+  },
+  {
+   "name": "unknown future schemes of different families",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "acme.ref/1",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "lab.identity/3",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT identity recorded in another evaluation format",
+   "codes": [
+    "identity_format"
+   ],
+   "hint": "re-evaluate both with the same euler-eval version to compare them"
+  },
+  {
+   "name": "same family, malformed version",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/x"
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/2"
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT identity recorded in another evaluation format",
+   "codes": [
+    "identity_format"
+   ],
+   "hint": "re-evaluate both with the same euler-eval version to compare them"
+  },
+  {
+   "name": "unspecified vs a scheme",
+   "a": {
+    "identity": "sha256:a",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/2",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT identity recorded in another evaluation format",
+   "codes": [
+    "identity_format"
+   ],
+   "hint": "re-evaluate both with the same euler-eval version to compare them"
+  },
+  {
+   "name": "both unspecified: the scheme rule does not apply",
+   "a": {
+    "identity": "sha256:a",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "b": {
+    "identity": "sha256:b",
+    "dataset": {
+     "id": "cerema",
+     "scope": "depth",
+     "split": null
+    }
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT differs",
+   "codes": [
+    "reference"
+   ],
+   "hint": null
+  },
+  {
+   "name": "same scheme, crops of one source",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/2",
+    "view": {
+     "source": "cam",
+     "region": [
+      0,
+      0,
+      10,
+      10
+     ]
+    }
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/2",
+    "view": {
+     "source": "cam",
+     "region": [
+      0,
+      0,
+      5,
+      10
+     ]
+    }
+   },
+   "tier": "comparable",
+   "label": "comparable · GT region differs by 50.0 %",
+   "codes": [
+    "domain"
+   ],
+   "hint": null
+  },
+  {
+   "name": "different schemes take precedence over a common view source",
+   "a": {
+    "identity": "sha256:a",
+    "identityScheme": "euler.reference/1",
+    "view": {
+     "source": "cam",
+     "region": [
+      0,
+      0,
+      10,
+      10
+     ]
+    }
+   },
+   "b": {
+    "identity": "sha256:b",
+    "identityScheme": "euler.reference/2",
+    "view": {
+     "source": "cam",
+     "region": [
+      0,
+      0,
+      5,
+      10
+     ]
+    }
+   },
+   "tier": "incomparable",
+   "label": "not comparable · GT identity recorded in an older evaluation format",
+   "codes": [
+    "identity_format"
+   ],
+   "hint": "re-evaluate both with the same euler-eval version to compare them"
+  }
+ ]
+}

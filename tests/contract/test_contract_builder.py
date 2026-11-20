@@ -311,3 +311,19 @@ def test_implicit_reducers_must_agree_to_pair():
     per_item = {name}
     assert compare(a, a, name, {"x", "y"}, {"x"}, per_item, per_item).codes == ["population_paired"]
     assert compare(a, b, name, {"x", "y"}, {"x"}, per_item, per_item).codes == ["population_partial"]
+
+
+def test_reference_identity_scheme():
+    builder = ProtocolBuilder("x", ["euler.core"])
+    builder.reference("gt", identity="sha256:" + "1" * 64)
+    builder.reference("calibration", identity="sha256:" + "2" * 64, identity_scheme="lab.calib/3")
+    builder.reference("depth", identity="sha256:" + "3" * 64, identity_scheme=None)
+    references = builder.build()["references"]
+    assert references["gt"]["identityScheme"] == "euler.reference/2"
+    assert references["calibration"]["identityScheme"] == "lab.calib/3"
+    assert "identityScheme" not in references["depth"]
+    with pytest.raises(ValueError, match="family"):
+        builder.reference("gt", identity="x", identity_scheme="no-version")
+    bad = {"schemaVersion": "2.0", "parameters": {},
+           "references": {"gt": {"identity": "x", "identityScheme": "v2"}}}
+    assert any("identityScheme" in p for p in protocol_problems(bad))

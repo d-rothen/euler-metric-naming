@@ -95,7 +95,8 @@
      "split": "test",
      "scope": "mix"
     },
-    "identity": "sha256:16738421e66305e11694f673b076451c288cfcf6bbb57f2961620e1a922f87d8"
+    "identity": "sha256:16738421e66305e11694f673b076451c288cfcf6bbb57f2961620e1a922f87d8",
+    "identityScheme": "euler.reference/2"
    }
   },
   "observations": {
