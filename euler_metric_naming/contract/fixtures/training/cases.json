@@ -1,0 +1,537 @@
+{
+ "description": "Expected results for documents.json (docs/training.md), derived by hand from the spec. Problems are compared by code and path, in order. keys: training_metric_problem / trainingMetricProblem (problem code or null) and training_metric_definition / trainingMetricDefinition (the declared definition of the key's base, or null). contracts: fields of validation_pass_contract / validationPassContract. verdicts: like verdicts.json; 'pass:<name>' loads a pass with load_validation_pass / loadValidationPass, 'eval:<file>' a file of evals/ with load_eval_file / loadEvalFile.",
+ "declarations": [
+  {
+   "declaration": "n_ok",
+   "problems": []
+  },
+  {
+   "declaration": "n_v1",
+   "problems": [
+    {
+     "code": "schema_version",
+     "path": "schema_version"
+    },
+    {
+     "code": "metrics",
+     "path": "namespaces.depth.train.metrics"
+    },
+    {
+     "code": "metrics",
+     "path": "namespaces.sys.train.metrics"
+    }
+   ]
+  },
+  {
+   "declaration": "n_broken",
+   "problems": [
+    {
+     "code": "schema_version",
+     "path": "schema_version"
+    },
+    {
+     "code": "namespace_key",
+     "path": "namespaces.depth.eval"
+    },
+    {
+     "code": "not_object",
+     "path": "namespaces.rgb.train"
+    },
+    {
+     "code": "axes",
+     "path": "namespaces.seg.train.axes"
+    },
+    {
+     "code": "axis_role",
+     "path": "namespaces.sys.train.axisRoles.kind"
+    },
+    {
+     "code": "evaluation_id",
+     "path": "namespaces.sys.train.metrics.absrel"
+    },
+    {
+     "code": "definition_invalid",
+     "path": "namespaces.sys.train.metrics.lr"
+    }
+   ]
+  }
+ ],
+ "keys": [
+  {
+   "declaration": "n_ok",
+   "key": "depth.train.loss.total",
+   "problem": null,
+   "definition": {
+    "namespace": "depth.train",
+    "base": "total"
+   }
+  },
+  {
+   "declaration": "n_ok",
+   "key": "depth.train.diag.final.depth_mae",
+   "problem": null,
+   "definition": {
+    "namespace": "depth.train",
+    "base": "depth_mae"
+   }
+  },
+  {
+   "declaration": "n_ok",
+   "key": "rgb.train.diag.image_psnr",
+   "problem": null,
+   "definition": {
+    "namespace": "rgb.train",
+    "base": "image_psnr"
+   }
+  },
+  {
+   "declaration": "n_ok",
+   "key": "sys.train.gpu_util_pct",
+   "problem": null,
+   "definition": {
+    "namespace": "sys.train",
+    "base": "gpu_util_pct"
+   }
+  },
+  {
+   "declaration": "n_ok",
+   "key": "step",
+   "problem": null,
+   "definition": null
+  },
+  {
+   "declaration": "n_ok",
+   "key": "elapsed_sec",
+   "problem": null,
+   "definition": null
+  },
+  {
+   "declaration": "n_ok",
+   "key": "depth.train.diag.image_psnr",
+   "problem": "no_definition",
+   "definition": null
+  },
+  {
+   "declaration": "n_ok",
+   "key": "sys.train.lr.default",
+   "problem": "no_definition",
+   "definition": null
+  },
+  {
+   "declaration": "n_ok",
+   "key": "depth.train.total",
+   "problem": "no_decomposition",
+   "definition": null
+  },
+  {
+   "declaration": "n_ok",
+   "key": "sys.train",
+   "problem": "no_decomposition",
+   "definition": null
+  },
+  {
+   "declaration": "n_ok",
+   "key": "val/sky/mask_iou",
+   "problem": "no_namespace",
+   "definition": null
+  },
+  {
+   "declaration": "n_ok",
+   "key": "camera.train.diag.valid_fraction",
+   "problem": "no_namespace",
+   "definition": null
+  },
+  {
+   "declaration": "n_ok",
+   "key": "depth.eval.metric.standard.image_mean.absrel",
+   "problem": "evaluation_name",
+   "definition": null
+  }
+ ],
+ "sets": [
+  {
+   "set": "v_cerema",
+   "problems": []
+  },
+  {
+   "set": "v_range",
+   "problems": []
+  },
+  {
+   "set": "v_mask",
+   "problems": []
+  },
+  {
+   "set": "v_broken",
+   "problems": [
+    {
+     "code": "kind",
+     "path": "kind"
+    },
+    {
+     "code": "schema_version",
+     "path": "schemaVersion"
+    },
+    {
+     "code": "key",
+     "path": "key"
+    },
+    {
+     "code": "metric_set",
+     "path": "metricSet"
+    },
+    {
+     "code": "protocol",
+     "path": "protocol"
+    }
+   ]
+  },
+  {
+   "set": "v_series",
+   "problems": [
+    {
+     "code": "items",
+     "path": "protocol.items.series"
+    }
+   ]
+  },
+  {
+   "set": "v_duplicate",
+   "problems": [
+    {
+     "code": "items",
+     "path": "protocol.items.ids"
+    }
+   ]
+  }
+ ],
+ "passes": [
+  {
+   "pass": "p_same",
+   "problems": []
+  },
+  {
+   "pass": "p_subset",
+   "problems": []
+  },
+  {
+   "pass": "p_no_items",
+   "problems": []
+  },
+  {
+   "pass": "p_cap",
+   "problems": []
+  },
+  {
+   "pass": "p_range",
+   "problems": []
+  },
+  {
+   "pass": "p_mask",
+   "problems": []
+  },
+  {
+   "pass": "p_lab",
+   "problems": [
+    {
+     "code": "undescribed",
+     "path": "parameters.lab.knob"
+    }
+   ]
+  },
+  {
+   "pass": "p_bad",
+   "problems": [
+    {
+     "code": "step",
+     "path": "step"
+    },
+    {
+     "code": "step",
+     "path": "epoch"
+    },
+    {
+     "code": "not_a_number",
+     "path": "metrics.depth.eval.metric.standard.image_mean.absrel"
+    },
+    {
+     "code": "no_definition",
+     "path": "metrics.depth.eval.metric.standard.image_mean.sqrel"
+    },
+    {
+     "code": "not_a_number",
+     "path": "metrics.depth.train.loss.total"
+    },
+    {
+     "code": "no_decomposition",
+     "path": "metrics.depth.train.loss.total"
+    },
+    {
+     "code": "undescribed",
+     "path": "parameters.lab.knob"
+    },
+    {
+     "code": "parameter_value",
+     "path": "parameters.spatial.method"
+    },
+    {
+     "code": "undescribed",
+     "path": "observations.lab.seen"
+    },
+    {
+     "code": "length",
+     "path": "per_item.depth.eval.metric.standard.absrel"
+    }
+   ]
+  },
+  {
+   "pass": "p_duplicate_ids",
+   "problems": [
+    {
+     "code": "population",
+     "path": "population.ids"
+    }
+   ]
+  }
+ ],
+ "contracts": [
+  {
+   "pass": "p_same",
+   "itemIds": [
+    "day-0",
+    "day-1",
+    "day-2",
+    "day-3",
+    "day-4",
+    "day-5"
+   ],
+   "populationCount": 6,
+   "parameters": {
+    "depth.cap.max_m": 38,
+    "spatial.method": "none",
+    "depth.alignment.applied": false
+   },
+   "seriesNames": [
+    "depth.eval.metric.standard.count",
+    "depth.eval.metric.standard.near.count"
+   ]
+  },
+  {
+   "pass": "p_subset",
+   "itemIds": [
+    "day-0",
+    "day-1",
+    "day-2"
+   ],
+   "populationCount": 3,
+   "parameters": {
+    "depth.cap.max_m": 38
+   },
+   "seriesNames": [
+    "depth.eval.metric.standard.count",
+    "depth.eval.metric.standard.near.count"
+   ]
+  },
+  {
+   "pass": "p_cap",
+   "itemIds": [
+    "day-0",
+    "day-1",
+    "day-2",
+    "day-3",
+    "day-4",
+    "day-5"
+   ],
+   "populationCount": 6,
+   "parameters": {
+    "depth.cap.max_m": 80
+   },
+   "observations": {
+    "depth.cap.clipped": 0.02
+   },
+   "seriesNames": [
+    "depth.eval.metric.standard.count",
+    "depth.eval.metric.standard.near.count"
+   ]
+  },
+  {
+   "pass": "p_no_items",
+   "itemIds": [
+    "day-0",
+    "day-1",
+    "day-2"
+   ],
+   "populationCount": 3,
+   "seriesNames": []
+  },
+  {
+   "pass": "p_duplicate_ids",
+   "itemIds": null,
+   "seriesNames": []
+  }
+ ],
+ "verdicts": [
+  {
+   "name": "a pass on the evaluated items with the evaluation's settings",
+   "a": "pass:p_same",
+   "b": "eval:d1.json",
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "tier": "same",
+   "label": "same protocol",
+   "codes": [],
+   "shared": null
+  },
+  {
+   "name": "the same for a pooled bin cell",
+   "a": "pass:p_same",
+   "b": "eval:d1.json",
+   "metric": "depth.eval.metric.standard.pixel_pool.near.absrel",
+   "tier": "same",
+   "label": "same protocol",
+   "codes": [],
+   "shared": null
+  },
+  {
+   "name": "a pass on half the items, with per-item values",
+   "a": "pass:p_subset",
+   "b": "eval:d1.json",
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "tier": "paired",
+   "label": "compared on 3 shared files",
+   "codes": [
+    "population_paired"
+   ],
+   "shared": 3,
+   "recompute": {
+    "a": 0.11,
+    "b": 0.11
+   }
+  },
+  {
+   "name": "pooled on the shared items with the count weights",
+   "a": "pass:p_subset",
+   "b": "eval:d1.json",
+   "metric": "depth.eval.metric.standard.pixel_pool.absrel",
+   "tier": "paired",
+   "label": "compared on 3 shared files",
+   "codes": [
+    "population_paired"
+   ],
+   "shared": 3,
+   "recompute": {
+    "a": 0.11060606060606061,
+    "b": 0.11060606060606061
+   }
+  },
+  {
+   "name": "a pooled bin on the shared items",
+   "a": "pass:p_subset",
+   "b": "eval:d1.json",
+   "metric": "depth.eval.metric.standard.pixel_pool.near.absrel",
+   "tier": "paired",
+   "label": "compared on 3 shared files",
+   "codes": [
+    "population_paired"
+   ],
+   "shared": 3,
+   "recompute": {
+    "a": 0.05510752688172043,
+    "b": 0.05510752688172043
+   }
+  },
+  {
+   "name": "a subset without per-item values cannot be recomputed",
+   "a": "pass:p_no_items",
+   "b": "eval:d1.json",
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "tier": "comparable",
+   "label": "comparable · computed on different files: 3 of 6 shared",
+   "codes": [
+    "population_partial"
+   ],
+   "shared": 3
+  },
+  {
+   "name": "a pass with another depth cap",
+   "a": "pass:p_cap",
+   "b": "eval:d1.json",
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "tier": "incomparable",
+   "label": "not comparable · depth cap differs",
+   "codes": [
+    "parameter"
+   ],
+   "shared": null
+  },
+  {
+   "name": "a GT validity range the evaluation did not apply (its default, null)",
+   "a": "pass:p_range",
+   "b": "eval:d1.json",
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "tier": "incomparable",
+   "label": "not comparable · GT validity range differs",
+   "codes": [
+    "parameter"
+   ],
+   "shared": null,
+   "hint": "score both with the same GT validity range, or none"
+  },
+  {
+   "name": "an extra validity mask the evaluation did not apply (its default, false)",
+   "a": "pass:p_mask",
+   "b": "eval:d1.json",
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "tier": "incomparable",
+   "label": "not comparable · extra validity mask differs",
+   "codes": [
+    "parameter"
+   ],
+   "shared": null,
+   "hint": "score without the extra mask to compare with an evaluation"
+  },
+  {
+   "name": "an undescribed pass parameter is strict",
+   "a": "pass:p_lab",
+   "b": "eval:d1.json",
+   "metric": "depth.eval.metric.standard.image_mean.absrel",
+   "tier": "incomparable",
+   "label": "not comparable · lab.knob not recorded",
+   "codes": [
+    "not_recorded"
+   ],
+   "shared": null
+  },
+  {
+   "name": "two passes of one set on overlapping items",
+   "a": "pass:p_same",
+   "b": "pass:p_subset",
+   "metric": "depth.eval.metric.standard.image_median.rmse",
+   "tier": "paired",
+   "label": "compared on 3 shared files",
+   "codes": [
+    "population_paired"
+   ],
+   "shared": 3,
+   "recompute": {
+    "a": 2.1,
+    "b": 2.1
+   }
+  },
+  {
+   "name": "a pass against an evaluation of a subset",
+   "a": "pass:p_same",
+   "b": "eval:d8.json",
+   "metric": "depth.eval.metric.standard.image_mean.delta1",
+   "tier": "paired",
+   "label": "compared on 3 shared files",
+   "codes": [
+    "population_paired"
+   ],
+   "shared": 3,
+   "recompute": {
+    "a": 0.89,
+    "b": 0.89
+   }
+  }
+ ]
+}

@@ -23,6 +23,13 @@
       "type": "string",
       "pattern": "^[0-9]+\\.[0-9]+$"
     },
+    "context": {
+      "enum": [
+        "eval",
+        "train"
+      ],
+      "description": "What the vocabulary's metrics measure: evaluation metrics (eval, the default) or training telemetry (train, docs/training.md). Training definitions never carry the id of an evaluation metric."
+    },
     "title": {
       "type": "string"
     },

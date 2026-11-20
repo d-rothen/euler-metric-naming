@@ -1,7 +1,7 @@
 {
   "$schema": "https://github.com/d-rothen/euler-metric-naming/contract/vocabulary-1.schema.json",
   "id": "euler.depth",
-  "version": "1.0",
+  "version": "1.1",
   "title": "Euler depth evaluation",
   "description": "Dense and sparse depth: alignment, depth cap, invalid values, benchmark bins and the depth metrics.",
   "descriptors": {
@@ -112,6 +112,21 @@
       "label": "depth conversion",
       "role": "definition",
       "description": "Conversion applied before scoring (none, radial_to_planar, planar_to_radial)."
+    },
+    "depth.gt.valid_range_m": {
+      "label": "GT validity range",
+      "role": "definition",
+      "unit": "m",
+      "default": null,
+      "hint": "score both with the same GT validity range, or none",
+      "description": "[min, max] GT depth in metres outside which pixels are not scored (either bound may be null). An in-training validation that bounds GT validity records it; evaluations without such bounds record null, the default."
+    },
+    "depth.extra_mask": {
+      "label": "extra validity mask",
+      "role": "definition",
+      "default": false,
+      "hint": "score without the extra mask to compare with an evaluation",
+      "description": "true when the producer removed pixels with an additional validity mask of its own (for example a training-time mask) whose content is not recorded. Evaluations without one record false, the default."
     }
   },
   "metrics": {

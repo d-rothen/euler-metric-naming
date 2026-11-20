@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/d-rothen/euler-metric-naming/contract/validation-pass-1.schema.json",
+  "title": "Validation pass record, schema 1",
+  "description": "One line of validation/<key>/passes.jsonl (docs/training.md section 3.3). Unknown properties are allowed and ignored.",
+  "type": "object",
+  "required": [
+    "step",
+    "metrics"
+  ],
+  "properties": {
+    "step": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "epoch": {
+      "type": "integer"
+    },
+    "wall_time": {
+      "type": "number"
+    },
+    "metrics": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "parameters": {
+      "$ref": "protocol-2.schema.json#/$defs/parameters"
+    },
+    "observations": {
+      "type": "object"
+    },
+    "population": {
+      "type": "object",
+      "required": [
+        "ids"
+      ],
+      "properties": {
+        "ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string"
+          }
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "manifest": {
+          "$ref": "protocol-2.schema.json#/$defs/hash"
+        },
+        "accounting": {
+          "type": "object"
+        }
+      }
+    },
+    "per_item": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    },
+    "series": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
+    }
+  },
+  "additionalProperties": true
+}

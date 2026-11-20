@@ -123,6 +123,20 @@ class ProtocolBuilder:
         self._parameters[key] = copy.deepcopy(value)
         return self
 
+    def describe(
+        self, key: str, *, descriptor: Optional[Mapping[str, Any]] = None
+    ) -> ProtocolBuilder:
+        """Snapshot the descriptor of *key* without recording a value.
+
+        For keys whose values are recorded elsewhere, such as the parameters a
+        validation pass resolves and the observations it makes
+        (``docs/training.md`` §3.2). A key already described keeps its
+        descriptor.
+        """
+        if key not in self._descriptors:
+            self._describe(key, descriptor)
+        return self
+
     def params(self, values: Mapping[str, Any]) -> ProtocolBuilder:
         """Record several vocabulary parameters at once."""
         for key, value in values.items():

@@ -10,8 +10,11 @@
  *
  * Consumers: normalize any results file with `loadEvalFile` (or `normalize`)
  * and judge one metric cell of two evaluations with `compareFiles` / `compare`.
+ * Training runs (docs/training.md): resolve a run's metric definitions with
+ * `trainingMetricDefinition`, and judge a validation pass like any evaluation
+ * with `loadValidationPass` + `compareFiles`.
  */
-import { CLOSED_SETS, LEGACY_PROTOCOL_1 } from './euler-contract.data.ts';
+import { CLOSED_SETS, LEGACY_PROTOCOL_1, VOCABULARIES } from './euler-contract.data.ts';
 
 // -- types ---------------------------------------------------------------------------
 
@@ -2209,4 +2212,613 @@ export function recomputeCell(
 		weights = perItemValues(file, perItem(side, weight));
 	}
 	return recompute(op, values, items, weights, form);
+}
+
+// -- training runs (docs/training.md) ------------------------------------------------------------
+
+/** `metric_naming.schema_version` of a training naming 2.0 declaration. */
+export const TRAINING_SCHEMA_VERSION = '2.0';
+/** `schemaVersion` of a validation set document. */
+export const VALIDATION_SET_SCHEMA_VERSION = '1.0';
+/** `kind` of a validation set document. */
+export const VALIDATION_SET_KIND = 'euler.validation_set';
+/** Fields of a train.jsonl / val.jsonl record that are not metrics. */
+export const RESERVED_RECORD_FIELDS: readonly string[] = ['step', 'epoch', 'wall_time', 'elapsed_sec'];
+
+/** One problem: a stable code, where it is (dotted path from the root) and what it is. */
+export interface Problem {
+	code: string;
+	path: string;
+	message: string;
+}
+
+const TRAIN_VERSION_RE = /^(\d+)\.(\d+)$/;
+const TRAIN_NAMESPACE_RE = /^[a-z0-9]+\.train$/;
+const TRAIN_SEGMENT_RE = /^[a-z0-9_]+$/;
+const TRAIN_BASE_RE = /^[a-z0-9_]+(\.[a-z0-9_]+)*$/;
+const VALIDATION_KEY_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+const SINGLE_ROLES = ['space', 'reduction'];
+
+function problem(code: string, path: string, message: string): Problem {
+	return { code, path, message };
+}
+
+function joinPath(...parts: string[]): string {
+	return parts.filter((part) => part !== '').join('.');
+}
+
+function versionMajor(version: unknown): number | null {
+	if (typeof version !== 'string') return null;
+	const match = TRAIN_VERSION_RE.exec(version);
+	return match ? Number(match[1]) : null;
+}
+
+function isInteger(value: unknown): value is number {
+	return isNumber(value) && Number.isInteger(value);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+	return isNumber(value) && Number.isFinite(value);
+}
+
+function isUniqueStrings(value: unknown): value is string[] {
+	if (!isStringArray(value)) return false;
+	return new Set(value.map((item) => item.normalize('NFC'))).size === value.length;
+}
+
+/** Python truthiness of a JSON value. */
+function truthy(value: unknown): boolean {
+	if (value === null || value === undefined || value === false || value === 0 || value === '') return false;
+	if (Array.isArray(value)) return value.length > 0;
+	if (isRecord(value)) return Object.keys(value).length > 0;
+	return true;
+}
+
+function sortedKeys(value: Rec): string[] {
+	return Object.keys(value).sort(compareCodePoints);
+}
+
+/** The v1-compatible shape of a parameter value (a scalar or at most 64 scalars), else why not. */
+export function parameterValueProblem(value: unknown): string | null {
+	const limits = CLOSED_SETS.parameterLimits;
+	let items: unknown[];
+	if (Array.isArray(value)) {
+		if (value.length > limits.maxListLength) return `must have at most ${limits.maxListLength} items`;
+		items = value;
+	} else {
+		items = [value];
+	}
+	for (const item of items) {
+		if (item === null || typeof item === 'boolean') continue;
+		if (isNumber(item)) {
+			if (!Number.isFinite(item)) return 'numbers must be finite';
+			continue;
+		}
+		if (typeof item === 'string') {
+			if (item.length > limits.maxStringLength) {
+				return `strings must have at most ${limits.maxStringLength} characters`;
+			}
+			continue;
+		}
+		return 'must be a JSON scalar or a list of scalars';
+	}
+	return null;
+}
+
+function stringList(value: unknown): boolean {
+	return isStringArray(value);
+}
+
+/** Problems of a metric definition (contract section 4.9), as the Python validator reports them. */
+export function metricDefinitionProblems(definition: unknown, path: string): string[] {
+	if (!isRecord(definition)) return [`${path} must be an object`];
+	const problems: string[] = [];
+	const kinds: readonly string[] = CLOSED_SETS.metricKinds;
+	const directions: readonly string[] = CLOSED_SETS.directions;
+	const scales: readonly string[] = CLOSED_SETS.displayScales;
+	const forms: readonly string[] = CLOSED_SETS.poolForms;
+	if (hasOwn(definition, 'kind') && !kinds.includes(definition.kind as string)) {
+		problems.push(`${path}.kind must be one of ${kinds.join(', ')}`);
+	}
+	if (hasOwn(definition, 'rev') && !validRev(definition.rev)) problems.push(`${path}.rev must be an integer >= 1`);
+	if (hasOwn(definition, 'direction') && !directions.includes(definition.direction as string)) {
+		problems.push(`${path}.direction must be one of ${directions.join(', ')}`);
+	}
+	const bounds = get(definition, 'bounds');
+	if (
+		bounds !== null &&
+		!(Array.isArray(bounds) && bounds.length === 2 && bounds.every((item) => item === null || isNumber(item)))
+	) {
+		problems.push(`${path}.bounds must be [min | null, max | null]`);
+	}
+	const display = get(definition, 'display');
+	if (display !== null) {
+		if (!isRecord(display) || !scales.includes(display.scale as string)) {
+			problems.push(`${path}.display.scale must be one of ${scales.join(', ')}`);
+		} else if (display.scale === 'absolute') {
+			const fullAt = display.fullAt;
+			if (!(isNumber(fullAt) && fullAt > 0)) problems.push(`${path}.display.fullAt must be a number > 0`);
+		}
+	}
+	if (hasOwn(definition, 'perItem') && typeof definition.perItem !== 'boolean') {
+		problems.push(`${path}.perItem must be a boolean`);
+	}
+	const pool = get(definition, 'pool');
+	if (pool !== null) {
+		if (!isRecord(pool) || !forms.includes(pool.form as string)) {
+			problems.push(`${path}.pool.form must be one of ${forms.join(', ')}`);
+		} else if (pool.form !== 'none' && !(typeof pool.weight === 'string' && pool.weight)) {
+			problems.push(`${path}.pool.weight is required for form '${String(pool.form)}'`);
+		}
+	}
+	if (hasOwn(definition, 'reducer') && !(typeof definition.reducer === 'string' && definition.reducer)) {
+		problems.push(`${path}.reducer must name a reducer`);
+	}
+	if (hasOwn(definition, 'requires') && !stringList(definition.requires)) {
+		problems.push(`${path}.requires must be a list of reference roles`);
+	}
+	if (hasOwn(definition, 'dependsOn') && !stringList(definition.dependsOn)) {
+		problems.push(`${path}.dependsOn must be a list of globs`);
+	}
+	return problems;
+}
+
+let evaluationIds: Set<string> | null = null;
+
+/**
+ * Ids of the metrics of every shipped evaluation vocabulary (a vocabulary is
+ * one unless it says `"context": "train"`). A training definition never
+ * carries one of them (`evaluation_id`).
+ */
+export function evaluationMetricIds(): ReadonlySet<string> {
+	if (evaluationIds === null) {
+		evaluationIds = new Set<string>();
+		for (const document of Object.values(VOCABULARIES)) {
+			const vocabulary = rec(document);
+			if (vocabulary.context === 'train') continue;
+			for (const term of Object.values(rec(vocabulary.metrics))) {
+				const id = rec(term).id;
+				if (typeof id === 'string') evaluationIds.add(id);
+			}
+		}
+	}
+	return evaluationIds;
+}
+
+/** Whether a metric_naming declaration claims training naming 2.x. */
+export function isTrainingNamingV2(naming: unknown): boolean {
+	return isRecord(naming) && versionMajor(naming.schema_version) === 2;
+}
+
+function axesProblem(axes: unknown): string | null {
+	if (!isRecord(axes)) return 'axes must be an object of axis declarations';
+	const positions = new Set<number>();
+	for (const name of sortedKeys(axes)) {
+		const declaration = axes[name];
+		if (!TRAIN_SEGMENT_RE.test(name)) return `axis name '${name}' must match [a-z0-9_]+`;
+		if (!isRecord(declaration)) return `axis '${name}' must be an object`;
+		const position = declaration.position;
+		if (!isInteger(position) || position < 0) return `axis '${name}' needs an integer position >= 0`;
+		if (positions.has(position)) return `axis '${name}' shares its position with another axis`;
+		positions.add(position);
+		const values = declaration.values;
+		if (
+			!(
+				Array.isArray(values) &&
+				values.length > 0 &&
+				values.every((value) => typeof value === 'string' && TRAIN_SEGMENT_RE.test(value))
+			)
+		) {
+			return `axis '${name}' needs a non-empty list of [a-z0-9_]+ values`;
+		}
+		if (hasOwn(declaration, 'optional') && typeof declaration.optional !== 'boolean') {
+			return `axis '${name}': optional must be a boolean`;
+		}
+	}
+	return null;
+}
+
+function axisRoleProblems(roles: unknown, axes: unknown, basePath: string): Problem[] {
+	const path = joinPath(basePath, 'axisRoles');
+	if (!isRecord(roles)) return [problem('not_object', path, 'axisRoles must be an object')];
+	const declared = new Set(isRecord(axes) ? Object.keys(axes) : []);
+	const allowed = AXIS_ROLES.filter((role) => role !== 'stratum');
+	const problems: Problem[] = [];
+	const counts: { [role: string]: number } = {};
+	for (const name of sortedKeys(roles)) {
+		const entry = roles[name];
+		const role = isRecord(entry) ? entry.role : null;
+		if (!declared.has(name)) {
+			problems.push(problem('axis_role', joinPath(path, name), `axis '${name}' is not declared`));
+		} else if (typeof role !== 'string' || !allowed.includes(role)) {
+			problems.push(problem('axis_role', joinPath(path, name), `role must be one of ${allowed.join(', ')}`));
+		} else {
+			counts[role] = (counts[role] ?? 0) + 1;
+			if (SINGLE_ROLES.includes(role) && (counts[role] as number) > 1) {
+				problems.push(problem('axis_role', joinPath(path, name), `at most one axis has the role '${role}'`));
+			}
+		}
+	}
+	return problems;
+}
+
+/** Problems of a training naming 2.0 declaration (docs/training.md section 2.7). */
+export function trainingNamingProblems(naming: unknown): Problem[] {
+	if (!isRecord(naming)) return [problem('not_object', '', 'the declaration must be an object')];
+	const problems: Problem[] = [];
+	if (versionMajor(naming.schema_version) !== 2) {
+		problems.push(problem('schema_version', 'schema_version', "schema_version must be '2.<minor>'"));
+	}
+	const namespaces = naming.namespaces;
+	if (!isRecord(namespaces) || Object.keys(namespaces).length === 0) {
+		problems.push(problem('namespaces', 'namespaces', 'namespaces must be a non-empty object'));
+		return problems;
+	}
+	const ids = evaluationMetricIds();
+	for (const key of sortedKeys(namespaces)) {
+		const entry = namespaces[key];
+		const basePath = joinPath('namespaces', key);
+		if (!TRAIN_NAMESPACE_RE.test(key)) {
+			problems.push(problem('namespace_key', basePath, `namespace '${key}' must be '<scope>.train'`));
+		}
+		if (!isRecord(entry)) {
+			problems.push(problem('not_object', basePath, 'a namespace entry must be an object'));
+			continue;
+		}
+		const axes = get(entry, 'axes');
+		const axesIssue = axesProblem(axes);
+		if (axesIssue !== null) problems.push(problem('axes', joinPath(basePath, 'axes'), axesIssue));
+		if (hasOwn(entry, 'axisRoles')) problems.push(...axisRoleProblems(entry.axisRoles, axes, basePath));
+		const metrics = entry.metrics;
+		if (!isRecord(metrics)) {
+			problems.push(problem('metrics', joinPath(basePath, 'metrics'), 'metrics must be an object'));
+			continue;
+		}
+		for (const base of sortedKeys(metrics)) {
+			const definition = metrics[base];
+			const path = joinPath(basePath, 'metrics', base);
+			const found: string[] = [];
+			if (!TRAIN_BASE_RE.test(base)) found.push(`base name '${base}' must be [a-z0-9_]+ segments`);
+			found.push(...metricDefinitionProblems(definition, path));
+			if (found.length > 0) {
+				problems.push(problem('definition_invalid', path, found.join('; ')));
+				continue;
+			}
+			const id = rec(definition).id;
+			if (typeof id === 'string' && ids.has(id)) {
+				problems.push(
+					problem('evaluation_id', path, `'${id}' is an evaluation metric; record it in a validation set`)
+				);
+			}
+		}
+	}
+	return problems;
+}
+
+function trainingNamespaceEntry(naming: unknown, name: string): [string, Rec] | null {
+	const namespaces = isRecord(naming) ? naming.namespaces : null;
+	const segments = name.split('.');
+	if (!isRecord(namespaces) || segments.length < 2) return null;
+	const namespace = segments.slice(0, 2).join('.');
+	const entry = hasOwn(namespaces, namespace) ? namespaces[namespace] : null;
+	return isRecord(entry) ? [namespace, entry] : null;
+}
+
+/**
+ * The problem of one train.jsonl / val.jsonl key under a 2.0 declaration, or
+ * null when it is a reserved record field or declared (docs/training.md 2.5).
+ */
+export function trainingMetricProblem(naming: unknown, name: string): Problem | null {
+	if (RESERVED_RECORD_FIELDS.includes(name)) return null;
+	const segments = name.split('.');
+	const found = trainingNamespaceEntry(naming, name);
+	if (found === null) {
+		if (segments.length >= 2 && segments[1] === 'eval') {
+			return problem('evaluation_name', name, 'evaluation names belong in a validation set');
+		}
+		return problem('no_namespace', name, 'no declared namespace prefixes this key');
+	}
+	const [namespace, entry] = found;
+	const declarations = axisDeclarations(get(entry, 'axes'));
+	let base: string;
+	try {
+		if (declarations === null) throw new Error('malformed axes');
+		base = decompose(name, namespace, declarations).metric;
+	} catch (error) {
+		return problem('no_decomposition', name, `does not decompose under '${namespace}': ${(error as Error).message}`);
+	}
+	const metrics = entry.metrics;
+	if (!(isRecord(metrics) && hasOwn(metrics, base) && isRecord(metrics[base]))) {
+		return problem('no_definition', name, `base metric '${base}' has no definition`);
+	}
+	return null;
+}
+
+/** `not_a_number` unless `value` is a finite JSON number (booleans are not). */
+export function metricValueProblem(value: unknown): Problem | null {
+	return isFiniteNumber(value) ? null : problem('not_a_number', '', 'values must be finite numbers');
+}
+
+/** The definition of a training metric name under its run's declaration, or null. */
+export function trainingMetricDefinition(naming: unknown, name: string): MetricDefinition | null {
+	const found = trainingNamespaceEntry(naming, name);
+	if (found === null) return null;
+	const [namespace, entry] = found;
+	const declarations = axisDeclarations(get(entry, 'axes'));
+	if (declarations === null) return null;
+	let base: string;
+	try {
+		base = decompose(name, namespace, declarations).metric;
+	} catch {
+		return null;
+	}
+	const metrics = entry.metrics;
+	const definition = isRecord(metrics) && hasOwn(metrics, base) ? metrics[base] : null;
+	return isRecord(definition) ? (clone(definition) as MetricDefinition) : null;
+}
+
+/**
+ * A contract-shaped view of one training namespace for definition readers:
+ * `{metricSet: {metricNamespace, axes}, axes: <roles>, metrics}`. Not a
+ * protocol; never judged.
+ */
+export function trainingContract(naming: unknown, namespace: string): Rec | null {
+	const namespaces = isRecord(naming) ? naming.namespaces : null;
+	const entry = isRecord(namespaces) && hasOwn(namespaces, namespace) ? namespaces[namespace] : null;
+	if (!isRecord(entry)) return null;
+	return {
+		metricSet: { metricNamespace: namespace, axes: isRecord(entry.axes) ? clone(entry.axes) : {} },
+		axes: isRecord(entry.axisRoles) ? clone(entry.axisRoles) : {},
+		metrics: isRecord(entry.metrics) ? clone(entry.metrics) : {}
+	};
+}
+
+// -- validation sets and passes (docs/training.md section 3) ------------------------------------
+
+/** Problems of a validation set document (section 3.5); the protocol block is checked separately. */
+export function validationSetProblems(document: unknown): Problem[] {
+	if (!isRecord(document)) return [problem('not_object', '', 'a validation set document must be an object')];
+	const problems: Problem[] = [];
+	if (document.kind !== VALIDATION_SET_KIND) {
+		problems.push(problem('kind', 'kind', `kind must be '${VALIDATION_SET_KIND}'`));
+	}
+	if (versionMajor(document.schemaVersion) !== 1) {
+		problems.push(problem('schema_version', 'schemaVersion', "schemaVersion must be '1.<minor>'"));
+	}
+	const key = document.key;
+	if (!(typeof key === 'string' && VALIDATION_KEY_RE.test(key))) {
+		problems.push(problem('key', 'key', 'key must match [a-z0-9][a-z0-9_-]{0,63}'));
+	}
+	const metricSet = document.metricSet;
+	const namespace = isRecord(metricSet) ? metricSet.metricNamespace : null;
+	const axes = isRecord(metricSet) ? (hasOwn(metricSet, 'axes') ? metricSet.axes : {}) : null;
+	if (!(typeof namespace === 'string' && namespace) || axisDeclarations(axes) === null) {
+		problems.push(problem('metric_set', 'metricSet', 'metricSet needs a metricNamespace and valid axes'));
+	}
+	const protocol = document.protocol;
+	if (!isRecord(protocol) || schemaMajor(protocol.schemaVersion) !== 2) {
+		problems.push(problem('protocol', 'protocol', 'protocol must be a schema-2 protocol block'));
+		return problems;
+	}
+	if (hasOwn(protocol, 'items') && protocol.items !== null) {
+		const items = protocol.items;
+		const ids = isRecord(items) ? get(items, 'ids') : null;
+		const series = isRecord(items) ? get(items, 'series') : null;
+		if (!isRecord(items) || (ids !== null && !isUniqueStrings(ids))) {
+			problems.push(problem('items', 'protocol.items.ids', 'items.ids must be unique strings'));
+		} else if (truthy(series)) {
+			problems.push(problem('items', 'protocol.items.series', 'per-item series belong to passes'));
+		}
+	}
+	return problems;
+}
+
+interface SetParts {
+	namespace: string | null;
+	declarations: { [axis: string]: AxisDeclaration } | null;
+	protocol: Rec;
+}
+
+function setParts(document: unknown): SetParts {
+	const doc = rec(document);
+	const metricSet = rec(doc.metricSet);
+	const namespace = metricSet.metricNamespace;
+	return {
+		namespace: typeof namespace === 'string' ? namespace : null,
+		declarations: axisDeclarations(hasOwn(metricSet, 'axes') ? metricSet.axes : {}),
+		protocol: rec(doc.protocol)
+	};
+}
+
+function nameProblem(name: string, path: string, parts: SetParts, definitions: Rec): Problem | null {
+	let base: string;
+	try {
+		if (parts.namespace === null || parts.declarations === null) throw new Error('the set has no usable metricSet');
+		base = decompose(name, parts.namespace, parts.declarations).metric;
+	} catch (error) {
+		return problem('no_decomposition', path, `does not decompose: ${(error as Error).message}`);
+	}
+	if (!(hasOwn(definitions, base) && isRecord(definitions[base]))) {
+		return problem('no_definition', path, `base metric '${base}' has no definition in the set`);
+	}
+	return null;
+}
+
+/** The item ids of a pass: its population.ids, else the set's items.ids (null when unknown). */
+export function validationPassIds(document: unknown, record: unknown): string[] | null {
+	const population = isRecord(record) ? record.population : null;
+	if (isRecord(population) && hasOwn(population, 'ids')) {
+		return isUniqueStrings(population.ids) ? [...population.ids] : null;
+	}
+	const items = rec(setParts(document).protocol.items);
+	const ids = items.ids;
+	return isUniqueStrings(ids) ? [...ids] : null;
+}
+
+/** Problems of a pass record against its set document (section 3.5). */
+export function validationPassProblems(document: unknown, record: unknown): Problem[] {
+	if (!isRecord(record)) return [problem('not_object', '', 'a pass record must be an object')];
+	const problems: Problem[] = [];
+	const step = record.step;
+	if (!(isInteger(step) && step >= 0)) problems.push(problem('step', 'step', 'step must be an integer >= 0'));
+	if (hasOwn(record, 'epoch') && !isInteger(record.epoch)) {
+		problems.push(problem('step', 'epoch', 'epoch must be an integer'));
+	}
+	const parts = setParts(document);
+	const definitions = rec(parts.protocol.metrics);
+	const descriptors = rec(parts.protocol.descriptors);
+	const metrics = record.metrics;
+	if (!isRecord(metrics) || Object.keys(metrics).length === 0) {
+		problems.push(problem('metrics', 'metrics', 'metrics must be a non-empty object'));
+	} else {
+		for (const name of sortedKeys(metrics)) {
+			const path = joinPath('metrics', name);
+			if (!isFiniteNumber(metrics[name])) problems.push(problem('not_a_number', path, 'values must be finite numbers'));
+			const found = nameProblem(name, path, parts, definitions);
+			if (found !== null) problems.push(found);
+		}
+	}
+	for (const block of ['parameters', 'observations']) {
+		if (!hasOwn(record, block)) continue;
+		const values = record[block];
+		if (!isRecord(values)) {
+			problems.push(problem('not_object', block, `${block} must be an object`));
+			continue;
+		}
+		for (const key of sortedKeys(values)) {
+			const path = joinPath(block, key);
+			if (!(hasOwn(descriptors, key) && isRecord(descriptors[key]))) {
+				problems.push(problem('undescribed', path, `'${key}' has no descriptor in the set`));
+			}
+			if (block === 'parameters') {
+				const issue = parameterValueProblem(values[key]);
+				if (issue !== null) problems.push(problem('parameter_value', path, `'${key}' ${issue}`));
+			}
+		}
+	}
+	if (hasOwn(record, 'population')) {
+		const population = record.population;
+		if (!isRecord(population)) {
+			problems.push(problem('not_object', 'population', 'population must be an object'));
+		} else if (!isUniqueStrings(population.ids)) {
+			problems.push(problem('population', 'population.ids', 'ids must be unique strings'));
+		}
+	}
+	const ids = validationPassIds(document, record);
+	for (const block of ['per_item', 'series']) {
+		if (!hasOwn(record, block)) continue;
+		const values = record[block];
+		if (!isRecord(values)) {
+			problems.push(problem('not_object', block, `${block} must be an object`));
+			continue;
+		}
+		for (const name of sortedKeys(values)) {
+			const path = joinPath(block, name);
+			const column = values[name];
+			if (ids === null || !Array.isArray(column) || column.length !== ids.length) {
+				problems.push(problem('length', path, 'one value per item id is required'));
+			}
+			const found = nameProblem(name, path, parts, definitions);
+			if (found !== null) problems.push(found);
+		}
+	}
+	return problems;
+}
+
+/** The normalized contract of the evaluation a pass stands for (section 3.4). */
+export function validationPassContract(document: unknown, record: unknown, sha: Sha256Hex = sha256Hex): Contract {
+	const parts = setParts(document);
+	const pass = rec(record);
+	const merged: Rec = clone(parts.protocol);
+	for (const block of ['parameters', 'observations']) {
+		const overlay = pass[block];
+		let base: Rec = isRecord(merged[block]) ? (merged[block] as Rec) : {};
+		if (isRecord(overlay)) base = { ...base, ...clone(overlay) };
+		merged[block] = base;
+	}
+	const items: Rec = {};
+	for (const [key, value] of Object.entries(rec(merged.items))) {
+		if (key !== 'series') items[key] = value;
+	}
+	const population = pass.population;
+	if (isRecord(population) && hasOwn(population, 'ids')) {
+		const ids = population.ids;
+		const previous = rec(merged.population);
+		const updated: Rec = {};
+		for (const [key, value] of Object.entries(previous)) {
+			if (key === 'unit' || key === 'idScheme') updated[key] = clone(value);
+		}
+		if (isUniqueStrings(ids)) {
+			updated.count = new Set(ids.map((item) => item.normalize('NFC'))).size;
+			updated.manifest = manifestHash(ids, sha);
+			items.ids = [...ids];
+		} else {
+			delete items.ids;
+		}
+		for (const key of ['count', 'manifest', 'accounting']) {
+			if (hasOwn(population, key)) updated[key] = clone(population[key]);
+		}
+		merged.population = updated;
+	}
+	const series = pass.series;
+	const kept: Rec = {};
+	if (isRecord(series)) {
+		for (const [name, values] of Object.entries(series)) {
+			if (Array.isArray(values)) kept[name] = [...values];
+		}
+	}
+	items.series = kept;
+	merged.items = items;
+	const metricSet = isRecord(document) && isRecord(document.metricSet) ? document.metricSet : undefined;
+	return normalize(merged, metricSet);
+}
+
+/**
+ * The evaluation a pass stands for, as an EvalFile (section 3.4): its
+ * aggregates are the pass's metrics, its per-item values the pass's per_item
+ * lists, its item set the pass's ids. `compareFiles` and `recomputeCell` take
+ * it like any loaded results file.
+ */
+export function loadValidationPass(document: unknown, record: unknown, sha: Sha256Hex = sha256Hex): EvalFile {
+	const pass = rec(record);
+	const contract = validationPassContract(document, pass, sha);
+	const ids = validationPassIds(document, pass);
+	const metrics: { [name: string]: number } = {};
+	for (const [name, value] of Object.entries(rec(pass.metrics))) {
+		if (isFiniteNumber(value)) metrics[name] = value;
+	}
+	const perFile: { [item: string]: { [name: string]: number } } = {};
+	if (ids !== null) {
+		for (const item of ids) perFile[item] = {};
+		for (const [name, column] of Object.entries(rec(pass.per_item))) {
+			if (!Array.isArray(column) || column.length !== ids.length) continue;
+			ids.forEach((item, index) => {
+				const value = column[index];
+				if (isFiniteNumber(value)) (perFile[item] as { [name: string]: number })[name] = value;
+			});
+		}
+	}
+	const seriesRaw = rec(rec(contract.items).series);
+	const series: { [name: string]: unknown[] } = {};
+	for (const [name, values] of Object.entries(seriesRaw)) {
+		if (Array.isArray(values)) series[name] = values;
+	}
+	const metricSet = isRecord(document) && isRecord(document.metricSet) ? document.metricSet : {};
+	const protocol: Rec = {};
+	for (const [key, value] of Object.entries(contract)) {
+		if (key !== 'metricSet') protocol[key] = value;
+	}
+	return {
+		raw: pass,
+		namespace: contract.metricSet.metricNamespace,
+		axes: axisDeclarations(contract.metricSet.axes) ?? {},
+		metricSet,
+		protocol,
+		contract,
+		metrics,
+		perFile,
+		fileIds: Object.keys(perFile),
+		series,
+		itemIds: ids === null ? null : [...ids]
+	};
 }

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/d-rothen/euler-metric-naming/contract/validation-set-1.schema.json",
+  "title": "Validation set document, schema 1",
+  "description": "validation/<key>/set.json of a training run (docs/training.md section 3.2). Unknown properties are allowed and ignored.",
+  "type": "object",
+  "required": [
+    "kind",
+    "schemaVersion",
+    "key",
+    "metricSet",
+    "protocol"
+  ],
+  "properties": {
+    "kind": {
+      "const": "euler.validation_set"
+    },
+    "schemaVersion": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    },
+    "key": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
+    },
+    "label": {
+      "type": "string"
+    },
+    "metricSet": {
+      "type": "object",
+      "required": [
+        "metricNamespace"
+      ],
+      "properties": {
+        "metricNamespace": {
+          "type": "string",
+          "minLength": 1
+        },
+        "axes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": [
+              "position",
+              "values"
+            ],
+            "properties": {
+              "position": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "values": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_]+$"
+                }
+              },
+              "optional": {
+                "type": "boolean"
+              },
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "protocol": {
+      "$ref": "protocol-2.schema.json"
+    }
+  },
+  "additionalProperties": true
+}

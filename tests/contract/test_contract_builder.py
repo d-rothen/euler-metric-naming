@@ -50,11 +50,11 @@ def test_builder_snapshots_vocabulary_terms():
     )
     protocol = builder.build()
     assert protocol["schemaVersion"] == "2.0"
-    assert protocol["vocabularies"] == {"euler.core": "1.0", "euler.depth": "1.0"}
-    assert protocol["descriptors"]["depth.cap.max_m"]["vocabulary"] == "euler.depth@1.0"
+    assert protocol["vocabularies"] == {"euler.core": "1.0", "euler.depth": "1.1"}
+    assert protocol["descriptors"]["depth.cap.max_m"]["vocabulary"] == "euler.depth@1.1"
     assert protocol["descriptors"]["reference.gt"]["label"] == "GT"
     assert set(protocol["metrics"]) == {"absrel", "rmse"}
-    assert protocol["metrics"]["absrel"]["vocabulary"] == "euler.depth@1.0"
+    assert protocol["metrics"]["absrel"]["vocabulary"] == "euler.depth@1.1"
     assert set(protocol["reducers"]) == {"image_mean", "pixel_pool"}
     assert protocol["population"]["count"] == 3
     assert protocol["population"]["manifest"] == manifest_hash(["a", "b", "é"])

@@ -23,6 +23,7 @@ import {
 	hashValue,
 	legacyTable,
 	loadEvalFile,
+	loadValidationPass,
 	manifestHash,
 	manifestIds,
 	measure,
@@ -31,10 +32,22 @@ import {
 	recomputeCell,
 	relevantKeys,
 	sha256Hex,
-	utf8Encode
+	trainingMetricDefinition,
+	trainingMetricProblem,
+	trainingNamingProblems,
+	utf8Encode,
+	validationPassContract,
+	validationPassProblems,
+	validationSetProblems
 } from './euler-contract.ts';
-import type { EvalFile } from './euler-contract.ts';
-import { CLOSED_SETS, VOCABULARIES } from './euler-contract.data.ts';
+import type { EvalFile, Problem } from './euler-contract.ts';
+import {
+	CLOSED_SETS,
+	TRAINING_NAMING_SCHEMA,
+	VALIDATION_PASS_SCHEMA,
+	VALIDATION_SET_SCHEMA,
+	VOCABULARIES
+} from './euler-contract.data.ts';
 import { nodeCompareFiles, nodeSha256Hex } from './euler-contract-node.ts';
 
 const FIXTURES = new URL('../fixtures/', import.meta.url);
@@ -284,4 +297,108 @@ test('generated data matches the JSON sources', () => {
 	const legacy = JSON.parse(readFileSync(new URL('../legacy/protocol-1.json', import.meta.url), 'utf8'));
 	assert.deepEqual(legacyTable(), legacy);
 	assert.deepEqual([...CLOSED_SETS.tiers], ['same', 'paired', 'comparable', 'incomparable']);
+});
+
+// -- training runs (docs/training.md) -------------------------------------------------------------
+
+const TRAINING = load('training/documents.json');
+const TRAINING_CASES = load('training/cases.json');
+
+function codes(problems: Problem[]): { code: string; path: string }[] {
+	return problems.map((p) => ({ code: p.code, path: p.path }));
+}
+
+function trainingFile(ref: string): EvalFile {
+	const [kind, name] = ref.split(':') as [string, string];
+	if (kind === 'eval') return evalFile(name);
+	const entry = TRAINING.passes[name];
+	return loadValidationPass(TRAINING.sets[entry.set], entry.record);
+}
+
+test('training declarations', () => {
+	for (const testCase of TRAINING_CASES.declarations) {
+		const declaration = TRAINING.declarations[testCase.declaration];
+		assert.deepEqual(codes(trainingNamingProblems(declaration)), testCase.problems, testCase.declaration);
+	}
+});
+
+test('training keys and definitions', () => {
+	for (const testCase of TRAINING_CASES.keys) {
+		const declaration = TRAINING.declarations[testCase.declaration];
+		const found = trainingMetricProblem(declaration, testCase.key);
+		assert.equal(found === null ? null : found.code, testCase.problem, testCase.key);
+		const definition = trainingMetricDefinition(declaration, testCase.key);
+		const expected = testCase.definition;
+		if (expected === null) assert.equal(definition, null, testCase.key);
+		else assert.deepEqual(definition, declaration.namespaces[expected.namespace].metrics[expected.base], testCase.key);
+	}
+});
+
+test('validation set and pass problems', () => {
+	for (const testCase of TRAINING_CASES.sets) {
+		assert.deepEqual(codes(validationSetProblems(TRAINING.sets[testCase.set])), testCase.problems, testCase.set);
+	}
+	for (const testCase of TRAINING_CASES.passes) {
+		const entry = TRAINING.passes[testCase.pass];
+		assert.deepEqual(
+			codes(validationPassProblems(TRAINING.sets[entry.set], entry.record)),
+			testCase.problems,
+			testCase.pass
+		);
+	}
+});
+
+test('validation pass contracts', () => {
+	for (const testCase of TRAINING_CASES.contracts) {
+		const entry = TRAINING.passes[testCase.pass];
+		const contract = validationPassContract(TRAINING.sets[entry.set], entry.record) as Any;
+		assert.deepEqual(contract.items.ids ?? null, testCase.itemIds, testCase.pass);
+		if ('populationCount' in testCase) assert.equal(contract.population.count, testCase.populationCount, testCase.pass);
+		for (const [key, value] of Object.entries(testCase.parameters ?? {})) {
+			assert.deepEqual(contract.parameters[key], value, `${testCase.pass}: ${key}`);
+		}
+		for (const [key, value] of Object.entries(testCase.observations ?? {})) {
+			assert.deepEqual(contract.observations[key], value, `${testCase.pass}: ${key}`);
+		}
+		assert.deepEqual(Object.keys(contract.items.series).sort(), testCase.seriesNames, testCase.pass);
+		assert.deepEqual(trainingFile(`pass:${testCase.pass}`).itemIds, testCase.itemIds, testCase.pass);
+	}
+});
+
+test('training verdicts', () => {
+	for (const testCase of TRAINING_CASES.verdicts) {
+		const fileA = trainingFile(testCase.a);
+		const fileB = trainingFile(testCase.b);
+		const verdict = compareFiles(fileA, fileB, testCase.metric);
+		const name = testCase.name;
+		assert.equal(verdict.tier, testCase.tier, name);
+		assert.equal(verdict.label, testCase.label, name);
+		assert.deepEqual(verdict.reasons.map((reason) => reason.code), testCase.codes, name);
+		assert.equal(verdict.shared, testCase.shared, name);
+		if ('hint' in testCase) assert.equal(verdict.reasons[0]?.hint, testCase.hint, name);
+		if ('recompute' in testCase) {
+			const itemsA = fileEvidence(fileA).items as Set<string>;
+			const itemsB = fileEvidence(fileB).items as Set<string>;
+			const shared = [...itemsA].filter((item) => itemsB.has(item));
+			const gotA = recomputeCell(fileA.contract, fileA, testCase.metric, shared) as number;
+			const gotB = recomputeCell(fileB.contract, fileB, testCase.metric, shared) as number;
+			assert.ok(Math.abs(gotA - testCase.recompute.a) <= 1e-9, `${name}: ${gotA}`);
+			assert.ok(Math.abs(gotB - testCase.recompute.b) <= 1e-9, `${name}: ${gotB}`);
+		}
+		const backward = compareFiles(fileB, fileA, testCase.metric);
+		assert.equal(backward.tier, verdict.tier, name);
+		assert.deepEqual(backward.reasons.map((r) => r.code), verdict.reasons.map((r) => r.code), name);
+		assert.equal(backward.shared, verdict.shared, name);
+	}
+});
+
+test('training schemas are generated from the JSON sources', () => {
+	for (const [name, generated] of [
+		['training-naming-2.schema.json', TRAINING_NAMING_SCHEMA],
+		['validation-set-1.schema.json', VALIDATION_SET_SCHEMA],
+		['validation-pass-1.schema.json', VALIDATION_PASS_SCHEMA]
+	] as const) {
+		const source = JSON.parse(readFileSync(new URL(`../schema/${name}`, import.meta.url), 'utf8'));
+		assert.deepEqual(generated, source, name);
+	}
 });

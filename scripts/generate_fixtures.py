@@ -33,6 +33,7 @@ from euler_metric_naming.contract import (  # noqa: E402
 )
 
 EVALS = ROOT / "euler_metric_naming" / "contract" / "fixtures" / "evals"
+TRAINING = ROOT / "euler_metric_naming" / "contract" / "fixtures" / "training" / "documents.json"
 SOURCE = "cerema/rgb_left@1024x1920"
 DAY = [f"day-{i}" for i in range(6)]
 NIGHT = [f"night-{i}" for i in range(6)]
@@ -583,6 +584,237 @@ def rgb(*, items=RGB_ITEMS, offset=0, edges=(0, 1, 5, None), fid=12.0):
     }
 
 
+# ---------------------------------------------------------------------------- training
+
+
+def training_declaration():
+    """A training naming 2.0 declaration as MetricNamespace writes it."""
+    namespace = MetricNamespace(
+        producer="euler_train.fixture",
+        producer_version="1.0.0",
+        modalities=("depth", "rgb"),
+        stages=("prior", "final"),
+        metrics={
+            "total": {"kind": "score", "direction": "lower", "displayName": "Total loss"},
+            "depth_mae": MetricDescription(
+                is_higher_better=False, unit="m", min_value=0.0,
+                display_name="Depth MAE (training batch)",
+            ),
+        },
+        namespace_metrics={
+            "rgb.train": {
+                "image_psnr": MetricDescription(
+                    is_higher_better=True, unit="dB", display_name="PSNR (training batch)"
+                )
+            }
+        },
+    )
+    return namespace.training_naming_config()
+
+
+def broken_declaration():
+    return {
+        "schema_version": "3.0",
+        "namespaces": {
+            "depth.eval": {"axes": {}, "metrics": {}},
+            "rgb.train": "not an object",
+            "seg.train": {"axes": {"kind": {"position": 0, "values": []}}, "metrics": {}},
+            "sys.train": {
+                "axes": {},
+                "axisRoles": {"kind": {"role": "kind"}},
+                "metrics": {
+                    "absrel": {"id": "depth.absrel", "kind": "score", "direction": "lower"},
+                    "lr": {"kind": "score", "direction": "up"},
+                },
+            },
+        },
+    }
+
+
+#: Settings of d1 a validation set configures; the resolved ones go per pass.
+_SET_PARAMETERS = {
+    "depth.alignment.mode": "auto_affine",
+    "depth.alignment.fit": "scale_shift",
+    "depth.alignment.fit_trim": 0.0,
+    "depth.cap.max_m": 38,
+    "depth.benchmark.range_m": [0.01, 32],
+    "depth.invalid.policy": "exclude_sentinel",
+    "depth.conversion": "none",
+    "sky.gt.masking": False,
+    "sky.pred.masking": False,
+    "sky.pred.fill": False,
+    "spatial.policy": "auto",
+    "spatial.resize_target": "gt_grid",
+    "spatial.mask_resample": "nearest_exact",
+}
+_PASS_DESCRIBED = (
+    "depth.alignment.applied",
+    "depth.input_space",
+    "spatial.method",
+    "domain.region",
+    "prediction.resample",
+    "depth.cap.clipped",
+)
+
+
+def _metric_space_names():
+    return [name for name in _depth_metric_names({"metric": None}) if ".image_quality." not in name]
+
+
+def validation_set(*, key="cerema", items=DAY, valid_range=None, extra_mask=False):
+    """A validation set over d1's GT: d1's settings, d1's names (metric space)."""
+    builder = ProtocolBuilder("depth.dense", ["euler.core", "euler.sky", "euler.depth"])
+    builder.reference(
+        "gt",
+        identity=_gt_identity("cropped"),
+        modality="depth",
+        dataset={"id": "cerema", "variant": "cropped", "split": None, "scope": "depth"},
+        manifest={"hash": hash_value(["cropped"]), "count": 1600},
+        view={"source": SOURCE, "region": [270, 170, 734, 1730]},
+    )
+    builder.params(_SET_PARAMETERS)
+    builder.param("depth.gt.valid_range_m", valid_range)
+    builder.param("depth.extra_mask", extra_mask)
+    for described in _PASS_DESCRIBED:
+        builder.describe(described)
+    builder.population(items, unit="image")
+    builder.stratification("depth.gt_range", sqrt_stratification(0.01, 32))
+    builder.axis("space", "space").axis("category", "family").axis("reduction", "reduction")
+    builder.axis("bin", "stratum", stratification="depth.gt_range")
+    builder.metrics_for(_metric_space_names(), "depth.eval", DEPTH_AXES)
+    builder.metric("count")
+    return {
+        "kind": "euler.validation_set",
+        "schemaVersion": "1.0",
+        "key": key,
+        "label": f"CEREMA cropped, {len(items)} frames",
+        "metricSet": _envelope({"canonical_space": "metric", "emitted_spaces": ["metric"]}),
+        "protocol": builder.build(),
+    }
+
+
+def validation_pass(
+    step, *, items=DAY, population=False, per_item=True, parameters=None, observations=None
+):
+    """A pass of a validation set: d1's metric-space values on *items*."""
+    rows = _depth_values(items, 0.0)["metric"]
+    tree = _depth_tree({"metric": rows}, fid=0.0)["eval"]["metric"]["standard"]
+    metrics = {}
+    for reduction, values in tree.items():
+        for metric, value in values.items():
+            if isinstance(value, dict):
+                for inner, bin_value in value.items():
+                    metrics[f"depth.eval.metric.standard.{reduction}.{metric}.{inner}"] = bin_value
+            else:
+                metrics[f"depth.eval.metric.standard.{reduction}.{metric}"] = value
+    record = {
+        "step": step,
+        "epoch": step // 100,
+        "wall_time": 1794000000.0 + step,
+        "metrics": dict(sorted(metrics.items())),
+        "parameters": {
+            "depth.alignment.applied": False,
+            "depth.input_space": "metric",
+            "spatial.method": "none",
+            **(parameters or {}),
+        },
+        "observations": {
+            "domain.region": {"frame": SOURCE, "box": [270, 170, 734, 1730]},
+            "prediction.resample": [1, 1],
+            "depth.cap.clipped": 0.0123,
+            **(observations or {}),
+        },
+    }
+    if population:
+        record["population"] = {"ids": list(items)}
+    if per_item:
+        prefix = "depth.eval.metric.standard"
+        record["per_item"] = {
+            f"{prefix}.{name}": [rows[item][name] for item in items]
+            for name in ("absrel", "rmse", "delta1", "near.absrel")
+        }
+        record["series"] = {
+            f"{prefix}.{name}": [rows[item][name] for item in items]
+            for name in ("count", "near.count")
+        }
+    return record
+
+
+def build_training() -> dict:
+    sets = {
+        "v_cerema": validation_set(),
+        "v_range": validation_set(key="cerema_range", valid_range=[0.001, 200]),
+        "v_mask": validation_set(key="cerema_mask", extra_mask=True),
+    }
+    broken = copy.deepcopy(sets["v_cerema"])
+    broken.update({"kind": "validation", "schemaVersion": "2.0", "key": "Bad Key"})
+    broken["metricSet"] = {"axes": {}}
+    broken["protocol"] = {"schemaVersion": "1.3", "parameters": {}}
+    sets["v_broken"] = broken
+    series = copy.deepcopy(sets["v_cerema"])
+    series["protocol"]["items"]["series"] = {"depth.eval.metric.standard.count": [1] * len(DAY)}
+    sets["v_series"] = series
+    duplicate = copy.deepcopy(sets["v_cerema"])
+    duplicate["protocol"]["items"]["ids"] = ["day-0", "day-0"]
+    sets["v_duplicate"] = duplicate
+
+    passes = {
+        "p_same": {"set": "v_cerema", "record": validation_pass(100)},
+        "p_subset": {
+            "set": "v_cerema",
+            "record": validation_pass(200, items=DAY[:3], population=True),
+        },
+        "p_no_items": {
+            "set": "v_cerema",
+            "record": validation_pass(300, items=DAY[:3], population=True, per_item=False),
+        },
+        "p_cap": {
+            "set": "v_cerema",
+            "record": validation_pass(
+                400, parameters={"depth.cap.max_m": 80}, observations={"depth.cap.clipped": 0.02}
+            ),
+        },
+        "p_range": {"set": "v_range", "record": validation_pass(100)},
+        "p_mask": {"set": "v_mask", "record": validation_pass(100)},
+        "p_lab": {"set": "v_cerema", "record": validation_pass(500, parameters={"lab.knob": 3})},
+    }
+    bad = validation_pass(600, items=DAY[:2], population=True)
+    bad["step"] = -1
+    bad["epoch"] = "one"
+    bad["metrics"] = {
+        "depth.eval.metric.standard.image_mean.absrel": "0.5",
+        "depth.eval.metric.standard.image_mean.sqrel": 0.2,
+        "depth.train.loss.total": True,
+    }
+    bad["parameters"] = {"spatial.method": {"nested": True}, "lab.knob": 1}
+    bad["observations"] = {"lab.seen": 2}
+    bad["per_item"] = {"depth.eval.metric.standard.absrel": [0.1]}
+    bad["series"] = {"depth.eval.metric.standard.count": [1, 2]}
+    passes["p_bad"] = {"set": "v_cerema", "record": bad}
+    duplicate_ids = validation_pass(700, items=DAY[:2], population=True, per_item=False)
+    duplicate_ids["population"]["ids"] = ["day-0", "day-0"]
+    passes["p_duplicate_ids"] = {"set": "v_cerema", "record": duplicate_ids}
+    return {
+        "description": (
+            "Generated by scripts/generate_fixtures.py: training naming declarations, "
+            "validation set documents and pass records (docs/training.md). The "
+            "expected results are hand-written in cases.json."
+        ),
+        "declarations": {
+            "n_ok": training_declaration(),
+            "n_v1": MetricNamespace(
+                producer="euler_train.fixture",
+                producer_version="1.0.0",
+                modalities=("depth",),
+                descriptions={"total": MetricDescription(is_higher_better=False)},
+            ).training_naming_config(),
+            "n_broken": broken_declaration(),
+        },
+        "sets": sets,
+        "passes": passes,
+    }
+
+
 # ---------------------------------------------------------------------------- build
 
 
@@ -668,6 +900,13 @@ def main() -> int:
     args = parser.parse_args()
     files = build()
     stale = []
+    training = render(build_training())
+    if args.check:
+        if not TRAINING.exists() or TRAINING.read_text(encoding="utf-8") != training:
+            stale.append(str(TRAINING.relative_to(ROOT)))
+    else:
+        TRAINING.parent.mkdir(parents=True, exist_ok=True)
+        TRAINING.write_text(training, encoding="utf-8")
     for name, payload in files.items():
         path = EVALS / f"{name}.json"
         text = render(payload)
@@ -684,7 +923,7 @@ def main() -> int:
             return 1
         print("fixtures up to date")
     else:
-        print(f"wrote {len(files)} files to {EVALS}")
+        print(f"wrote {len(files)} files to {EVALS} and {TRAINING.relative_to(ROOT)}")
     return 0
 
 

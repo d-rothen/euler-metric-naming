@@ -13,6 +13,10 @@ from .descriptions import MetricDescription
 _RESERVED_SCOPES = frozenset({"sys"})
 _TRAIN_KINDS = ("loss", "diag", "stat")
 _SEGMENT_RE = re.compile(r"[a-z0-9_]+")
+#: Contract axis roles of the default training axes (docs/training.md §2.2).
+_DEFAULT_AXIS_ROLES = {"kind": "kind", "stage": "stage"}
+#: Vocabulary whose terms every training naming 2.0 declaration puts in sys.train.
+_SYSTEM_VOCABULARY = "euler.train"
 
 
 class MetricNamespace:
@@ -41,6 +45,21 @@ class MetricNamespace:
         default training ``kind`` and ``stage`` axes. This is useful for
         evaluation producers whose axes describe spaces, categories, or
         reductions instead.
+    metrics:
+        Training naming 2.0 (``docs/training.md``): metric definitions by
+        base metric name, shared by every modality namespace. Values are
+        contract metric definitions (dicts) or :class:`MetricDescription`
+        objects (converted with :meth:`MetricDescription.to_definition`).
+        Giving ``metrics`` or ``namespace_metrics`` makes
+        :meth:`training_naming_config` write schema 2.0.
+    namespace_metrics:
+        Training naming 2.0: definitions per namespace key
+        (``{"depth.train": {...}, "sys.train": {...}}``); they win over
+        ``metrics`` for that namespace.
+    axis_roles:
+        Training naming 2.0: contract axis role per axis name. Defaults:
+        ``kind`` -> ``kind``, ``stage`` -> ``stage``; other axes are
+        ``family``.
     """
 
     def __init__(
@@ -52,9 +71,30 @@ class MetricNamespace:
         context: str = "train",
         descriptions: dict[str, MetricDescription] | None = None,
         axes: dict[str, AxisDeclaration] | None = None,
+        metrics: dict[str, Any] | None = None,
+        namespace_metrics: dict[str, dict[str, Any]] | None = None,
+        axis_roles: dict[str, str] | None = None,
     ) -> None:
         if context not in ("train", "eval"):
             raise ValueError(f"context must be 'train' or 'eval', got {context!r}")
+        self._definitions_given = metrics is not None or namespace_metrics is not None
+        if self._definitions_given or axis_roles is not None:
+            if context != "train":
+                raise ValueError(
+                    "metrics, namespace_metrics and axis_roles describe training "
+                    "telemetry (context 'train'); evaluations write a protocol instead"
+                )
+            if descriptions:
+                raise ValueError(
+                    "pass definitions as metrics=... (training naming 2.0) or "
+                    "descriptions=... (schema 1), not both"
+                )
+        self._metrics = _definitions(metrics or {}, "metrics")
+        self._namespace_metrics = {
+            str(key): _definitions(value, f"namespace_metrics[{key!r}]")
+            for key, value in (namespace_metrics or {}).items()
+        }
+        self._axis_roles = dict(axis_roles) if axis_roles is not None else None
 
         self._producer = producer
         self._producer_version = producer_version
@@ -85,6 +125,14 @@ class MetricNamespace:
 
         for mod in self._modalities:
             _validate_segment(mod, "modality")
+
+        known = {f"{mod}.{self._context}" for mod in self._modalities}
+        known.add(f"sys.{self._context}")
+        for key in self._namespace_metrics:
+            if key not in known:
+                raise ValueError(
+                    f"namespace_metrics key {key!r} is not one of {sorted(known)}"
+                )
 
     @property
     def producer(self) -> str:
@@ -233,13 +281,20 @@ class MetricNamespace:
         """Generate the run-level ``metric_naming`` payload for euler-train.
 
         This is stored on the model run and used by euler-view for
-        metric decomposition and grouping.
+        metric decomposition and grouping. With ``metrics`` or
+        ``namespace_metrics`` it is a training naming 2.0 declaration
+        (``docs/training.md``): every namespace carries axis roles and metric
+        definitions, ``sys.train`` the ``euler.train`` vocabulary terms, and
+        the run is held to it for every key it logs. Without them it is the
+        schema-1 payload, unchanged.
         """
         if self._context != "train":
             raise TypeError(
                 "training_naming_config() is only available in 'train' context, "
                 f"not {self._context!r}"
             )
+        if self._definitions_given:
+            return self._training_naming_config_v2()
 
         namespaces: dict[str, Any] = {}
 
@@ -270,6 +325,45 @@ class MetricNamespace:
             "producer_version": self._producer_version,
             "namespaces": namespaces,
         }
+
+    def _training_naming_config_v2(self) -> dict[str, Any]:
+        from .contract.training import TRAINING_SCHEMA_VERSION, training_naming_problems
+        from .contract.vocabulary import load_vocabulary
+
+        axes = {name: decl.to_dict() for name, decl in self._build_axes().items()}
+        roles = self._axis_roles
+        if roles is None:
+            roles = {name: role for name, role in _DEFAULT_AXIS_ROLES.items() if name in axes}
+        axis_roles = {name: {"role": role} for name, role in roles.items()}
+
+        namespaces: dict[str, Any] = {}
+        for mod in self._modalities:
+            ns_key = f"{mod}.{self._context}"
+            metrics = {**deepcopy(self._metrics), **deepcopy(self._namespace_metrics.get(ns_key, {}))}
+            namespaces[ns_key] = _namespace_entry(deepcopy(axes), deepcopy(axis_roles), metrics)
+
+        vocabulary = load_vocabulary(_SYSTEM_VOCABULARY)
+        system = {
+            base: {**deepcopy(term), "vocabulary": vocabulary.tag}
+            for base, term in vocabulary.metrics.items()
+        }
+        sys_key = f"sys.{self._context}"
+        system.update(deepcopy(self._namespace_metrics.get(sys_key, {})))
+        namespaces[sys_key] = _namespace_entry({}, {}, system)
+
+        payload = {
+            "schema_version": TRAINING_SCHEMA_VERSION,
+            "producer_key": self._producer,
+            "producer_version": self._producer_version,
+            "namespaces": namespaces,
+        }
+        problems = training_naming_problems(payload)
+        if problems:
+            raise ValueError(
+                "invalid training naming declaration: "
+                + "; ".join(f"{p.path}: {p.message}" for p in problems)
+            )
+        return payload
 
     # -- internals -------------------------------------------------------------
 
@@ -343,6 +437,37 @@ class MetricNamespace:
                 f"unknown modality {modality!r}; "
                 f"declared modalities: {list(self._modalities)}"
             )
+
+
+def _definitions(values: Any, label: str) -> dict[str, dict[str, Any]]:
+    """Metric definitions by base name; ``MetricDescription`` values converted."""
+    if not isinstance(values, dict):
+        raise TypeError(f"{label} must be a dict of base metric name -> definition")
+    out: dict[str, dict[str, Any]] = {}
+    for base, value in values.items():
+        if isinstance(value, MetricDescription):
+            out[base] = value.to_definition()
+        elif isinstance(value, dict):
+            out[base] = deepcopy(value)
+        else:
+            raise TypeError(
+                f"{label}[{base!r}] must be a definition dict or a MetricDescription"
+            )
+    return out
+
+
+def _namespace_entry(
+    axes: dict[str, Any], axis_roles: dict[str, Any], metrics: dict[str, Any]
+) -> dict[str, Any]:
+    entry: dict[str, Any] = {"axes": axes, "axisRoles": axis_roles, "metrics": metrics}
+    descriptions = {
+        base: description
+        for base, definition in metrics.items()
+        if (description := MetricDescription.from_definition(definition).to_dict())
+    }
+    if descriptions:
+        entry["metricDescriptions"] = descriptions
+    return entry
 
 
 def _validate_segment(value: str, label: str) -> None:

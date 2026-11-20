@@ -56,7 +56,13 @@ def _json(value) -> str:
 def render() -> str:
     schemas = {
         name: json.loads((CONTRACT / "schema" / name).read_text(encoding="utf-8"))
-        for name in ("protocol-2.schema.json", "vocabulary-1.schema.json")
+        for name in (
+            "protocol-2.schema.json",
+            "vocabulary-1.schema.json",
+            "training-naming-2.schema.json",
+            "validation-set-1.schema.json",
+            "validation-pass-1.schema.json",
+        )
     }
     parts = [
         HEADER.format(version=__version__, version_json=json.dumps(__version__)),
@@ -75,6 +81,18 @@ def render() -> str:
         "",
         "/** JSON Schema of vocabulary documents (contract/schema/vocabulary-1.schema.json). */",
         f"export const VOCABULARY_SCHEMA: GeneratedJson = {_json(schemas['vocabulary-1.schema.json'])};",
+        "",
+        "/** JSON Schema of training naming 2.0 declarations (contract/schema/training-naming-2.schema.json). */",
+        "export const TRAINING_NAMING_SCHEMA: GeneratedJson = "
+        f"{_json(schemas['training-naming-2.schema.json'])};",
+        "",
+        "/** JSON Schema of validation set documents (contract/schema/validation-set-1.schema.json). */",
+        "export const VALIDATION_SET_SCHEMA: GeneratedJson = "
+        f"{_json(schemas['validation-set-1.schema.json'])};",
+        "",
+        "/** JSON Schema of validation pass records (contract/schema/validation-pass-1.schema.json). */",
+        "export const VALIDATION_PASS_SCHEMA: GeneratedJson = "
+        f"{_json(schemas['validation-pass-1.schema.json'])};",
         "",
     ]
     return "\n".join(parts)

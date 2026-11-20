@@ -67,6 +67,7 @@ euler_metric_naming = [
     "contract/fixtures/*.json",
     "contract/fixtures/*.md",
     "contract/fixtures/evals/*.json",
+    "contract/fixtures/training/*.json",
 ]
 
 [tool.pytest.ini_options]

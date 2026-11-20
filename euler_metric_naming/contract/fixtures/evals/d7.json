@@ -81,7 +81,7 @@
   "task": "depth.dense",
   "vocabularies": {
    "euler.core": "1.0",
-   "euler.depth": "1.0",
+   "euler.depth": "1.1",
    "euler.sky": "1.0"
   },
   "parameters": {
@@ -116,7 +116,7 @@
     "label": "depth alignment mode",
     "role": "provenance",
     "description": "Configured alignment mode (none, auto_affine, affine); whether a fit ran is depth.alignment.applied.",
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "depth.alignment.applied": {
     "label": "depth alignment applied",
@@ -130,7 +130,7 @@
     },
     "hint": "compare the native space, or two fitted runs",
     "description": "Whether a scale/shift fit to the GT produced the metric space.",
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "depth.alignment.fit": {
     "label": "depth alignment fit",
@@ -148,7 +148,7 @@
      }
     },
     "description": "The fitted model (e.g. scale, scale_shift, scale_shift_inverse).",
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "depth.alignment.fit_trim": {
     "label": "depth alignment trim",
@@ -166,13 +166,13 @@
      }
     },
     "description": "Fraction of largest residuals excluded from the fit.",
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "depth.input_space": {
     "label": "input depth space",
     "role": "provenance",
     "description": "Detected space of the prediction (metric, relative, affine).",
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "depth.cap.max_m": {
     "label": "depth cap",
@@ -184,7 +184,7 @@
      "value": 0
     },
     "description": "Predictions (and filled predicted sky) are clipped at this depth; inert when nothing was clipped.",
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "depth.benchmark.range_m": {
     "label": "benchmark depth range",
@@ -192,19 +192,19 @@
     "unit": "m",
     "derivedFrom": [],
     "description": "[min, max] GT depth of the benchmark bins; compared through the stratification it defines.",
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "depth.invalid.policy": {
     "label": "invalid-value policy",
     "role": "definition",
     "description": "How declared invalid sentinels are treated: exclude_sentinel (not scored) or score_sentinel.",
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "depth.conversion": {
     "label": "depth conversion",
     "role": "definition",
     "description": "Conversion applied before scoring (none, radial_to_planar, planar_to_radial).",
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "sky.gt.masking": {
     "label": "GT sky masking",
@@ -322,7 +322,7 @@
     "role": "provenance",
     "observe": "fraction",
     "description": "Fraction of scored pixels whose prediction the depth cap changed.",
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    }
   },
   "references": {
@@ -472,7 +472,7 @@
     "dependsOn": [
      "*"
     ],
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "absrel": {
     "id": "depth.absrel",
@@ -497,7 +497,7 @@
     "dependsOn": [
      "*"
     ],
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "rmse": {
     "id": "depth.rmse",
@@ -522,7 +522,7 @@
     "dependsOn": [
      "*"
     ],
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "delta1": {
     "id": "depth.delta1",
@@ -547,7 +547,7 @@
     "dependsOn": [
      "*"
     ],
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    },
    "count": {
     "id": "depth.count",
@@ -571,7 +571,7 @@
     "dependsOn": [
      "*"
     ],
-    "vocabulary": "euler.depth@1.0"
+    "vocabulary": "euler.depth@1.1"
    }
   },
   "items": {

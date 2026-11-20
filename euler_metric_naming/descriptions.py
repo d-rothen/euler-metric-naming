@@ -52,6 +52,55 @@ class MetricDescription:
             d["description"] = self.description
         return d
 
+    def to_definition(self) -> dict[str, Any]:
+        """A contract metric definition (``docs/contract.md`` §4.9) of this description.
+
+        ``is_higher_better`` becomes ``direction`` (``None`` -> ``none``, which
+        also turns comparison colouring off), ``min_value`` / ``max_value``
+        become ``bounds``; ``unit``, ``display_name`` and ``description`` are
+        copied. ``scale`` and ``format_hint`` are display hints of schema 1
+        without a counterpart and are left out.
+        """
+        definition: dict[str, Any] = {"kind": "score"}
+        if self.display_name is not None:
+            definition["displayName"] = self.display_name
+        if self.description is not None:
+            definition["description"] = self.description
+        if self.is_higher_better is None:
+            definition["direction"] = "none"
+            definition["display"] = {"scale": "none"}
+        else:
+            definition["direction"] = "higher" if self.is_higher_better else "lower"
+        if self.min_value is not None or self.max_value is not None:
+            definition["bounds"] = [self.min_value, self.max_value]
+        if self.unit is not None:
+            definition["unit"] = self.unit
+        return definition
+
+    @classmethod
+    def from_definition(cls, definition: dict[str, Any]) -> MetricDescription:
+        """The schema-1 description derived from a contract metric definition.
+
+        Training naming 2.0 writes it as ``metricDescriptions`` for consumers
+        that predate definitions (``docs/training.md`` §2.4).
+        """
+        direction = definition.get("direction")
+        bounds = definition.get("bounds")
+        low, high = (bounds if isinstance(bounds, list) and len(bounds) == 2 else (None, None))
+        unit = definition.get("unit")
+        display_name = definition.get("displayName")
+        description = definition.get("description")
+        return cls(
+            is_higher_better=(
+                True if direction == "higher" else False if direction == "lower" else None
+            ),
+            min_value=low if isinstance(low, (int, float)) and not isinstance(low, bool) else None,
+            max_value=high if isinstance(high, (int, float)) and not isinstance(high, bool) else None,
+            unit=unit if isinstance(unit, str) else None,
+            display_name=display_name if isinstance(display_name, str) else None,
+            description=description if isinstance(description, str) else None,
+        )
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> MetricDescription:
         """Deserialize from camelCase JSON format."""

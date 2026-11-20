@@ -1,0 +1,108 @@
+{
+  "$schema": "https://github.com/d-rothen/euler-metric-naming/contract/vocabulary-1.schema.json",
+  "id": "euler.train",
+  "version": "1.0",
+  "context": "train",
+  "title": "Euler training telemetry",
+  "description": "Telemetry terms that many training runs share (docs/training.md section 2.6): the system values euler-train records itself and common optimizer values. Training definitions, never evaluation metrics: their ids start with 'train.'.",
+  "descriptors": {},
+  "metrics": {
+    "lr": {
+      "id": "train.lr",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Learning rate",
+      "description": "Learning rate of the optimizer (or of one parameter group).",
+      "direction": "none",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "none"
+      }
+    },
+    "grad_norm": {
+      "id": "train.grad_norm",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Gradient norm",
+      "description": "Norm of the gradients before clipping.",
+      "direction": "none",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": null,
+      "display": {
+        "scale": "none"
+      }
+    },
+    "gpu_util_pct": {
+      "id": "train.gpu_util_pct",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "GPU utilization",
+      "description": "GPU compute utilization sampled by euler-train.",
+      "direction": "none",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "none"
+      }
+    },
+    "gpu_mem_util_pct": {
+      "id": "train.gpu_mem_util_pct",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "GPU memory utilization",
+      "description": "GPU memory-controller utilization sampled by euler-train.",
+      "direction": "none",
+      "bounds": [
+        0,
+        100
+      ],
+      "unit": "%",
+      "display": {
+        "scale": "none"
+      }
+    },
+    "gpu_mem_used_gb": {
+      "id": "train.gpu_mem_used_gb",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "GPU memory used",
+      "description": "GPU memory in use, sampled by euler-train.",
+      "direction": "none",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "GB",
+      "display": {
+        "scale": "none"
+      }
+    },
+    "gpu_mem_total_gb": {
+      "id": "train.gpu_mem_total_gb",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "GPU memory total",
+      "description": "Total GPU memory, sampled by euler-train.",
+      "direction": "none",
+      "bounds": [
+        0,
+        null
+      ],
+      "unit": "GB",
+      "display": {
+        "scale": "none"
+      }
+    }
+  },
+  "reducers": {}
+}

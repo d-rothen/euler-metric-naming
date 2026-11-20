@@ -67,7 +67,8 @@ def test_vocabularies_validate(vocabulary_id):
     errors = sorted(_validator(VOCABULARY).iter_errors(document), key=str)
     assert not errors, [e.message for e in errors[:5]]
     assert document["id"] == vocabulary_id
-    assert document["version"] == "1.0"
+    expected = {"euler.depth": "1.1"}.get(vocabulary_id, "1.0")
+    assert document["version"] == expected
 
 
 def test_vocabulary_ids_and_terms():
@@ -78,6 +79,7 @@ def test_vocabulary_ids_and_terms():
         "euler.rays",
         "euler.rgb",
         "euler.sky",
+        "euler.train",
     ]
     for vocabulary_id in available_vocabularies():
         document = load_vocabulary(vocabulary_id).document
