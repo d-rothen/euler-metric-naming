@@ -20,8 +20,16 @@
       "role": "reference",
       "appliesWhen": {
         "any": [
-          { "param": "sky.gt.masking", "op": "eq", "value": true },
-          { "param": "sky.iou", "op": "eq", "value": true }
+          {
+            "param": "sky.gt.masking",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "param": "sky.iou",
+            "op": "eq",
+            "value": true
+          }
         ]
       },
       "description": "GT semantic segmentation; read for GT sky masking and sky IoU only."
@@ -72,21 +80,37 @@
       "role": "domain",
       "compare": "measure",
       "observe": "factor",
-      "default": [1, 1],
+      "default": [
+        1,
+        1
+      ],
       "description": "Factor [height, width] by which the prediction was resampled onto the evaluated grid (target / source); [1, 1] when it was not."
     },
     "spatial.gt_resample": {
       "label": "GT resampled",
       "role": "definition",
       "compare": "equal",
-      "default": [1, 1],
+      "default": [
+        1,
+        1
+      ],
       "description": "Factor [height, width] by which the GT was resampled onto the prediction grid (target / source); [1, 1] when it was not. Resampled GT is different GT."
     },
     "spatial.method": {
       "label": "spatial alignment",
       "role": "derived",
-      "derivedFrom": ["prediction.resample", "spatial.gt_resample", "domain.region", "domain.grid"],
+      "derivedFrom": [
+        "prediction.resample",
+        "spatial.gt_resample",
+        "domain.region",
+        "domain.grid"
+      ],
       "description": "How prediction and GT resolutions were reconciled (none, crop, vae_crop, resize_prediction, resize, warp_prediction, warp, pointcloud_projection). Compared through the keys it is derived from."
+    },
+    "spatial.uniform": {
+      "label": "uniform evaluated grid",
+      "role": "definition",
+      "description": "Whether every item was scored with the same spatial method on the same grid (same GT and prediction sizes, same crop origin). When false, spatial.method and the domain observations describe the first item only."
     },
     "spatial.policy": {
       "label": "spatial alignment policy",
@@ -99,7 +123,12 @@
       "appliesWhen": {
         "param": "spatial.method",
         "op": "in",
-        "value": ["resize_prediction", "warp_prediction", "resize", "warp"]
+        "value": [
+          "resize_prediction",
+          "warp_prediction",
+          "resize",
+          "warp"
+        ]
       },
       "description": "Which grid is resampled when resolutions differ and the prediction is not a crop: gt_grid (prediction onto GT) or prediction_grid (GT onto prediction)."
     },
@@ -108,9 +137,21 @@
       "role": "definition",
       "appliesWhen": {
         "any": [
-          { "param": "sky.gt.masking", "op": "eq", "value": true },
-          { "param": "sky.pred.masking", "op": "eq", "value": true },
-          { "param": "sky.pred.fill", "op": "eq", "value": true }
+          {
+            "param": "sky.gt.masking",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "param": "sky.pred.masking",
+            "op": "eq",
+            "value": true
+          },
+          {
+            "param": "sky.pred.fill",
+            "op": "eq",
+            "value": true
+          }
         ]
       },
       "description": "Interpolation used to resample masks (nearest, nearest_exact)."

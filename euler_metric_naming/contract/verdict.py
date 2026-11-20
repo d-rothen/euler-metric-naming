@@ -190,6 +190,8 @@ def _merged_definition(a: Optional[dict], b: Optional[dict]) -> dict:
     pool_a = a.get("pool") if isinstance(a.get("pool"), dict) else {"form": "none"}
     pool_b = b.get("pool") if isinstance(b.get("pool"), dict) else {"form": "none"}
     merged["pool"] = pool_a if json_equal(pool_a, pool_b) else {"form": "none"}
+    if not json_equal(a.get("reducer"), b.get("reducer")):
+        merged.pop("reducer", None)
     return merged
 
 
@@ -378,8 +380,8 @@ def _bins_text(strat_a: dict, strat_b: dict, value: str) -> str:
     range_a, range_b = bin_range(strat_a, value), bin_range(strat_b, value)
     if range_a is None or range_b is None:
         return f"bins differ ({value})"
-    text_a = _with_unit(f"{format_sig3(range_a[0])}–{format_sig3(range_a[1])}", strat_a)
-    text_b = _with_unit(f"{format_sig3(range_b[0])}–{format_sig3(range_b[1])}", strat_b)
+    text_a = _with_unit(f"{_edge(range_a[0], True)}–{_edge(range_a[1], False)}", strat_a)
+    text_b = _with_unit(f"{_edge(range_b[0], True)}–{_edge(range_b[1], False)}", strat_b)
     if text_a != text_b:
         return f"bins differ ({value} {text_a} vs {text_b})"
     edges_a = _with_unit(_edges_text(strat_a), strat_a)
@@ -389,8 +391,16 @@ def _bins_text(strat_a: dict, strat_b: dict, value: str) -> str:
     return f"bins differ ({value})"
 
 
+def _edge(value: Any, low: bool) -> str:
+    """An edge in phrases: 3 significant digits; an open end is −∞ / ∞."""
+    if value is None:
+        return "−∞" if low else "∞"
+    return format_sig3(value)
+
+
 def _edges_text(stratification: dict) -> str:
-    return "[" + ", ".join(format_sig3(edge) for edge in stratification["edges"]) + "]"
+    edges = stratification["edges"]
+    return "[" + ", ".join(_edge(edge, index == 0) for index, edge in enumerate(edges)) + "]"
 
 
 def _with_unit(text: str, stratification: dict) -> str:
@@ -449,10 +459,14 @@ def _population(
                           f"computed on different files: {shared} of {total} shared", step=STEP_POPULATION)
 
 
-def _recompute_op(contract: Mapping, side: _Side) -> Optional[str]:
+def _recompute_op(contract: Mapping, side: _Side, definition: Mapping) -> Optional[str]:
+    """The recompute op of the cell's reducer: its reduction-axis value's, else
+    the metric definition's implicit ``reducer`` (§4.9)."""
     value = side.cell.value("reduction")
     if value is None:
-        return None
+        value = definition.get("reducer")
+        if not isinstance(value, str):
+            return None
     reducer = _record(contract.get("reducers")).get(value)
     op = reducer.get("recompute") if isinstance(reducer, dict) else None
     return op if op in ("mean", "median", "pool") else None
@@ -462,8 +476,8 @@ def _pairable(
     a: Mapping, b: Mapping, side_a: _Side, side_b: _Side, definition: dict,
     per_item_a: Optional[Collection[str]], per_item_b: Optional[Collection[str]],
 ) -> bool:
-    op = _recompute_op(a, side_a)
-    if op is None or op != _recompute_op(b, side_b):
+    op = _recompute_op(a, side_a, definition)
+    if op is None or op != _recompute_op(b, side_b, definition):
         return False
     if per_item_a is None or per_item_b is None:
         return False
@@ -571,14 +585,14 @@ def recompute_cell(
     side = _decompose_cell(contract, metric_name)
     if side is None:
         return None
-    op = _recompute_op(contract, side)
+    definition = _definition(contract, side.cell.base) or {}
+    op = _recompute_op(contract, side, definition)
     if op is None:
         return None
     values = eval_file.per_item_values(_per_item(side, side.cell.base))
     weights = None
     form = None
     if op == "pool":
-        definition = _definition(contract, side.cell.base) or {}
         pool = definition.get("pool") if isinstance(definition.get("pool"), dict) else {}
         form = pool.get("form")
         weight = pool.get("weight")

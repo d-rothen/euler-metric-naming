@@ -261,6 +261,12 @@ class ProtocolBuilder:
         if problems:
             raise ProtocolValidationError(problems)
         self._metrics[base] = snapshot
+        reducer = snapshot.get("reducer")
+        if isinstance(reducer, str) and reducer not in self._reducers:
+            term = self._vocab.reducer(reducer) or VocabularySet(["euler.core"]).reducer(reducer)
+            if term is not None:  # else build() reports the dangling name
+                self._use(term)
+                self._reducers[reducer] = term
         return self
 
     def metrics_for(

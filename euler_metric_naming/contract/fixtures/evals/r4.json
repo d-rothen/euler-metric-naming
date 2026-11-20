@@ -1,0 +1,464 @@
+{
+ "metricSet": {
+  "metricNamespace": "rgb.eval",
+  "producerKey": "euler-eval",
+  "producerVersion": "3.0.0",
+  "sourceKind": "computed",
+  "metadata": {
+   "metric_sets": [
+    "core"
+   ]
+  },
+  "axes": {
+   "category": {
+    "position": 0,
+    "optional": true,
+    "values": [
+     "image_quality",
+     "depth_binned_photometric"
+    ],
+    "description": "Metric category"
+   },
+   "dbin": {
+    "position": 1,
+    "optional": true,
+    "values": [
+     "all",
+     "near",
+     "mid",
+     "far"
+    ],
+    "description": "Fixed GT-depth bin"
+   }
+  },
+  "metricDescriptions": {
+   "psnr": {
+    "isHigherBetter": true,
+    "unit": "dB",
+    "displayName": "PSNR"
+   },
+   "fid": {
+    "isHigherBetter": false,
+    "displayName": "FID"
+   },
+   "mae": {
+    "isHigherBetter": false,
+    "displayName": "MAE"
+   }
+  }
+ },
+ "protocol": {
+  "schemaVersion": "2.0",
+  "task": "rgb.restoration",
+  "vocabularies": {
+   "euler.core": "1.0",
+   "euler.rgb": "1.0"
+  },
+  "parameters": {
+   "rgb.fid.backend": "builtin",
+   "rgb.depth_bins.policy": "v3",
+   "spatial.method": "none",
+   "spatial.uniform": true
+  },
+  "descriptors": {
+   "reference.gt": {
+    "label": "GT",
+    "role": "reference",
+    "description": "The ground truth the prediction is scored against.",
+    "vocabulary": "euler.core@1.0"
+   },
+   "rgb.fid.backend": {
+    "label": "FID backend",
+    "role": "definition",
+    "affects": {
+     "metrics": [
+      "fid",
+      "kid*"
+     ]
+    },
+    "description": "Inception feature backend of FID/KID (builtin, clean-fid).",
+    "vocabulary": "euler.rgb@1.0"
+   },
+   "rgb.depth_bins.policy": {
+    "label": "depth-bin policy",
+    "role": "definition",
+    "affects": {
+     "axes": {
+      "family": [
+       "depth_binned_photometric"
+      ]
+     }
+    },
+    "description": "Revision of how GT depth is put on the RGB grid for depth-binned photometric metrics (v1, v2).",
+    "vocabulary": "euler.rgb@1.0"
+   },
+   "spatial.method": {
+    "label": "spatial alignment",
+    "role": "derived",
+    "derivedFrom": [
+     "prediction.resample",
+     "spatial.gt_resample",
+     "domain.region",
+     "domain.grid"
+    ],
+    "description": "How prediction and GT resolutions were reconciled (none, crop, vae_crop, resize_prediction, resize, warp_prediction, warp, pointcloud_projection). Compared through the keys it is derived from.",
+    "vocabulary": "euler.core@1.0"
+   },
+   "spatial.uniform": {
+    "label": "uniform evaluated grid",
+    "role": "definition",
+    "description": "Whether every item was scored with the same spatial method on the same grid (same GT and prediction sizes, same crop origin). When false, spatial.method and the domain observations describe the first item only.",
+    "vocabulary": "euler.core@1.0"
+   }
+  },
+  "references": {
+   "gt": {
+    "modality": "rgb",
+    "dataset": {
+     "id": "cerema",
+     "variant": null,
+     "split": null,
+     "scope": "rgb"
+    },
+    "identity": "sha256:77c6b3bbdc4f1e3b13e5572e6c7dbe1e4cb6099b27be4ac45aa75c5724df3ac1"
+   }
+  },
+  "population": {
+   "unit": "image",
+   "idScheme": "euler.item_id/1",
+   "count": 6,
+   "manifest": "sha256:b40e30ad2964eeb6df724ab9ab140f384e29ecbf638f75f945b5781b82dbbb3f"
+  },
+  "stratifications": {
+   "rgb.depth_bins": {
+    "label": "GT depth (fixed photometric bins)",
+    "variable": "gt_depth_m",
+    "unit": "m",
+    "edges": [
+     null,
+     1,
+     5,
+     null
+    ],
+    "labels": [
+     "near",
+     "mid",
+     "far"
+    ],
+    "closed": "right",
+    "total": "all"
+   }
+  },
+  "reducers": {
+   "image_mean": {
+    "recompute": "mean",
+    "over": "item",
+    "label": "image mean",
+    "description": "Arithmetic mean of the per-image values.",
+    "vocabulary": "euler.core@1.0"
+   },
+   "dataset": {
+    "recompute": "none",
+    "over": "dataset",
+    "label": "dataset",
+    "description": "A dataset-level statistic that cannot be recomputed from per-item values (e.g. FID).",
+    "vocabulary": "euler.core@1.0"
+   }
+  },
+  "axes": {
+   "category": {
+    "role": "family"
+   },
+   "dbin": {
+    "role": "stratum",
+    "stratification": "rgb.depth_bins"
+   }
+  },
+  "metrics": {
+   "psnr": {
+    "id": "rgb.psnr",
+    "kind": "score",
+    "rev": 1,
+    "displayName": "PSNR",
+    "direction": "higher",
+    "bounds": [
+     null,
+     null
+    ],
+    "unit": "dB",
+    "display": {
+     "scale": "absolute",
+     "fullAt": 2,
+     "unit": "dB"
+    },
+    "perItem": true,
+    "pool": {
+     "form": "none"
+    },
+    "reducer": "image_mean",
+    "requires": [
+     "gt",
+     "segmentation"
+    ],
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "euler.rgb@1.0"
+   },
+   "fid": {
+    "id": "rgb.fid",
+    "kind": "score",
+    "rev": 1,
+    "displayName": "FID",
+    "description": "Fréchet Inception Distance; dataset-level.",
+    "direction": "lower",
+    "bounds": [
+     0,
+     null
+    ],
+    "unit": null,
+    "display": {
+     "scale": "relative"
+    },
+    "perItem": false,
+    "pool": {
+     "form": "none"
+    },
+    "reducer": "dataset",
+    "requires": [
+     "gt",
+     "segmentation"
+    ],
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "euler.rgb@1.0"
+   },
+   "mae": {
+    "id": "rgb.benchmark.mae",
+    "kind": "score",
+    "rev": 1,
+    "displayName": "MAE",
+    "description": "Photometric MAE within a GT-depth benchmark bin.",
+    "direction": "lower",
+    "bounds": [
+     0,
+     null
+    ],
+    "unit": null,
+    "display": {
+     "scale": "relative"
+    },
+    "perItem": true,
+    "pool": {
+     "form": "none"
+    },
+    "reducer": "image_mean",
+    "dependsOn": [
+     "*"
+    ],
+    "vocabulary": "euler.rgb@1.0"
+   }
+  },
+  "items": {
+   "ids": [
+    "frame-0",
+    "frame-1",
+    "frame-2",
+    "frame-3",
+    "frame-4",
+    "frame-5"
+   ],
+   "series": {}
+  }
+ },
+ "dataset_info": {
+  "num_pairs": 6
+ },
+ "meta": {
+  "version": "3.0.0",
+  "modality": "rgb"
+ },
+ "rgb": {
+  "eval": {
+   "image_quality": {
+    "psnr": 32.5,
+    "fid": 12.0
+   },
+   "depth_binned_photometric": {
+    "all": {
+     "mae": 0.075
+    },
+    "near": {
+     "mae": 0.175
+    },
+    "mid": {
+     "mae": 0.275
+    },
+    "far": {
+     "mae": 0.375
+    }
+   }
+  }
+ },
+ "per_file_metrics": {
+  "files": [
+   {
+    "id": "frame-0",
+    "metrics": {
+     "rgb": {
+      "eval": {
+       "image_quality": {
+        "psnr": 30.0
+       },
+       "depth_binned_photometric": {
+        "all": {
+         "mae": 0.05
+        },
+        "near": {
+         "mae": 0.15
+        },
+        "mid": {
+         "mae": 0.25
+        },
+        "far": {
+         "mae": 0.35
+        }
+       }
+      }
+     }
+    }
+   },
+   {
+    "id": "frame-1",
+    "metrics": {
+     "rgb": {
+      "eval": {
+       "image_quality": {
+        "psnr": 31.0
+       },
+       "depth_binned_photometric": {
+        "all": {
+         "mae": 0.06
+        },
+        "near": {
+         "mae": 0.16
+        },
+        "mid": {
+         "mae": 0.26
+        },
+        "far": {
+         "mae": 0.36
+        }
+       }
+      }
+     }
+    }
+   },
+   {
+    "id": "frame-2",
+    "metrics": {
+     "rgb": {
+      "eval": {
+       "image_quality": {
+        "psnr": 32.0
+       },
+       "depth_binned_photometric": {
+        "all": {
+         "mae": 0.07
+        },
+        "near": {
+         "mae": 0.17
+        },
+        "mid": {
+         "mae": 0.27
+        },
+        "far": {
+         "mae": 0.37
+        }
+       }
+      }
+     }
+    }
+   },
+   {
+    "id": "frame-3",
+    "metrics": {
+     "rgb": {
+      "eval": {
+       "image_quality": {
+        "psnr": 33.0
+       },
+       "depth_binned_photometric": {
+        "all": {
+         "mae": 0.08
+        },
+        "near": {
+         "mae": 0.18
+        },
+        "mid": {
+         "mae": 0.28
+        },
+        "far": {
+         "mae": 0.38
+        }
+       }
+      }
+     }
+    }
+   },
+   {
+    "id": "frame-4",
+    "metrics": {
+     "rgb": {
+      "eval": {
+       "image_quality": {
+        "psnr": 34.0
+       },
+       "depth_binned_photometric": {
+        "all": {
+         "mae": 0.09
+        },
+        "near": {
+         "mae": 0.19
+        },
+        "mid": {
+         "mae": 0.29
+        },
+        "far": {
+         "mae": 0.39
+        }
+       }
+      }
+     }
+    }
+   },
+   {
+    "id": "frame-5",
+    "metrics": {
+     "rgb": {
+      "eval": {
+       "image_quality": {
+        "psnr": 35.0
+       },
+       "depth_binned_photometric": {
+        "all": {
+         "mae": 0.1
+        },
+        "near": {
+         "mae": 0.2
+        },
+        "mid": {
+         "mae": 0.3
+        },
+        "far": {
+         "mae": 0.4
+        }
+       }
+      }
+     }
+    }
+   }
+  ]
+ }
+}

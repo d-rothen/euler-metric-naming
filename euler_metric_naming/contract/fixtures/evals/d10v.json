@@ -416,6 +416,13 @@
    }
   },
   "reducers": {
+   "dataset": {
+    "recompute": "none",
+    "over": "dataset",
+    "label": "dataset",
+    "description": "A dataset-level statistic that cannot be recomputed from per-item values (e.g. FID).",
+    "vocabulary": "euler.core@1.0"
+   },
    "image_mean": {
     "recompute": "mean",
     "over": "item",
@@ -473,6 +480,7 @@
     "pool": {
      "form": "none"
     },
+    "reducer": "dataset",
     "dependsOn": [
      "*"
     ],

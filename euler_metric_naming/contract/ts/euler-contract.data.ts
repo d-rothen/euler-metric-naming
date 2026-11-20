@@ -242,6 +242,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				],
 				"description": "How prediction and GT resolutions were reconciled (none, crop, vae_crop, resize_prediction, resize, warp_prediction, warp, pointcloud_projection). Compared through the keys it is derived from."
 			},
+			"spatial.uniform": {
+				"label": "uniform evaluated grid",
+				"role": "definition",
+				"description": "Whether every item was scored with the same spatial method on the same grid (same GT and prediction sizes, same crop origin). When false, spatial.method and the domain observations describe the first item only."
+			},
 			"spatial.policy": {
 				"label": "spatial alignment policy",
 				"role": "provenance",
@@ -379,6 +384,23 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 					}
 				},
 				"description": "Fraction of largest residuals excluded from the fit."
+			},
+			"depth.alignment.fit_max_gt_percentile": {
+				"label": "depth alignment GT percentile",
+				"role": "definition",
+				"appliesWhen": {
+					"param": "depth.alignment.applied",
+					"op": "eq",
+					"value": true
+				},
+				"affects": {
+					"axes": {
+						"space": [
+							"metric"
+						]
+					}
+				},
+				"description": "Upper GT-depth percentile of the pixels the scale/shift fit uses (95 under GT sky masking); null when every valid pixel is used."
 			},
 			"depth.input_space": {
 				"label": "input depth space",
@@ -704,6 +726,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -727,6 +750,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -750,6 +774,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -773,6 +798,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "dataset",
 				"dependsOn": [
 					"*"
 				]
@@ -796,6 +822,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "dataset",
 				"dependsOn": [
 					"*"
 				]
@@ -819,6 +846,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "dataset",
 				"dependsOn": [
 					"*"
 				]
@@ -1468,10 +1496,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"display": {
 					"scale": "relative"
 				},
-				"perItem": false,
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -1490,10 +1519,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"display": {
 					"scale": "relative"
 				},
-				"perItem": false,
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -1512,10 +1542,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"display": {
 					"scale": "relative"
 				},
-				"perItem": false,
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -1534,10 +1565,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"display": {
 					"scale": "relative"
 				},
-				"perItem": false,
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -1556,10 +1588,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"display": {
 					"scale": "relative"
 				},
-				"perItem": false,
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -1578,10 +1611,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"display": {
 					"scale": "relative"
 				},
-				"perItem": false,
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -1600,10 +1634,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"display": {
 					"scale": "relative"
 				},
-				"perItem": false,
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -1622,10 +1657,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"display": {
 					"scale": "relative"
 				},
-				"perItem": false,
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -1644,10 +1680,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"display": {
 					"scale": "relative"
 				},
-				"perItem": false,
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -1667,10 +1704,11 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"display": {
 					"scale": "complement"
 				},
-				"perItem": false,
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -1939,6 +1977,753 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"dependsOn": [
 					"*"
 				]
+			},
+			"angular_error.mean_angle": {
+				"id": "points3d.angular_error.mean_angle",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Mean Ray Angle Error",
+				"description": "Mean ray-direction angle error over all valid points.",
+				"direction": "lower",
+				"bounds": [
+					0,
+					180
+				],
+				"unit": "deg",
+				"display": {
+					"scale": "relative"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"angular_error.median_angle": {
+				"id": "points3d.angular_error.median_angle",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Median Ray Angle Error",
+				"direction": "lower",
+				"bounds": [
+					0,
+					180
+				],
+				"unit": "deg",
+				"display": {
+					"scale": "relative"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"angular_error.percent_below_5": {
+				"id": "points3d.angular_error.percent_below_5",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Ray < 5°",
+				"direction": "higher",
+				"bounds": [
+					0,
+					100
+				],
+				"unit": "%",
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"angular_error.percent_below_10": {
+				"id": "points3d.angular_error.percent_below_10",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Ray < 10°",
+				"direction": "higher",
+				"bounds": [
+					0,
+					100
+				],
+				"unit": "%",
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"angular_error.percent_below_15": {
+				"id": "points3d.angular_error.percent_below_15",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Ray < 15°",
+				"direction": "higher",
+				"bounds": [
+					0,
+					100
+				],
+				"unit": "%",
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"angular_error.percent_below_20": {
+				"id": "points3d.angular_error.percent_below_20",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Ray < 20°",
+				"direction": "higher",
+				"bounds": [
+					0,
+					100
+				],
+				"unit": "%",
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"angular_error.percent_below_30": {
+				"id": "points3d.angular_error.percent_below_30",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Ray < 30°",
+				"direction": "higher",
+				"bounds": [
+					0,
+					100
+				],
+				"unit": "%",
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"angular_error.mean": {
+				"id": "points3d.angular_error.mean",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Mean Ray Angle Error (image)",
+				"description": "Per-image mean ray angle error.",
+				"direction": "lower",
+				"bounds": [
+					0,
+					180
+				],
+				"unit": "deg",
+				"display": {
+					"scale": "relative"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"angular_error.median": {
+				"id": "points3d.angular_error.median",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Median Ray Angle Error (image)",
+				"description": "Per-image median ray angle error.",
+				"direction": "lower",
+				"bounds": [
+					0,
+					180
+				],
+				"unit": "deg",
+				"display": {
+					"scale": "relative"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"rho_a": {
+				"id": "points3d.rho_a",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "ρ_A",
+				"description": "Per-image ρ_A of the point-map ray directions.",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"rho_a.mean": {
+				"id": "points3d.rho_a.mean",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "ρ_A (Mean)",
+				"description": "Mean of the per-image ρ_A.",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"rho_a.median": {
+				"id": "points3d.rho_a.median",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "ρ_A (Median)",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"rho_a.std": {
+				"id": "points3d.rho_a.std",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "ρ_A (Std)",
+				"direction": "none",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "none"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"normal_consistency.mean_angle": {
+				"id": "points3d.normal_consistency.mean_angle",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Normal Mean Angle",
+				"description": "Mean normal angle error; the aggregate pools every valid point.",
+				"direction": "lower",
+				"bounds": [
+					0,
+					180
+				],
+				"unit": "deg",
+				"display": {
+					"scale": "relative"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"normal_consistency.median_angle": {
+				"id": "points3d.normal_consistency.median_angle",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Normal Median Angle",
+				"direction": "lower",
+				"bounds": [
+					0,
+					180
+				],
+				"unit": "deg",
+				"display": {
+					"scale": "relative"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"normal_consistency.percent_below_11_25": {
+				"id": "points3d.normal_consistency.percent_below_11_25",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Normal < 11.25°",
+				"direction": "higher",
+				"bounds": [
+					0,
+					100
+				],
+				"unit": "%",
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"normal_consistency.percent_below_22_5": {
+				"id": "points3d.normal_consistency.percent_below_22_5",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Normal < 22.5°",
+				"direction": "higher",
+				"bounds": [
+					0,
+					100
+				],
+				"unit": "%",
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"normal_consistency.percent_below_30": {
+				"id": "points3d.normal_consistency.percent_below_30",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Normal < 30°",
+				"direction": "higher",
+				"bounds": [
+					0,
+					100
+				],
+				"unit": "%",
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"point_edge_f1.precision": {
+				"id": "points3d.point_edge_f1.precision",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Point Edge Precision",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"point_edge_f1.recall": {
+				"id": "points3d.point_edge_f1.recall",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Point Edge Recall",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"point_edge_f1.f1": {
+				"id": "points3d.point_edge_f1.f1",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Point Edge F1",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_05.precision": {
+				"id": "points3d.fscore.tau_0_05.precision",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score Precision @ 0.05m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_05.recall": {
+				"id": "points3d.fscore.tau_0_05.recall",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score Recall @ 0.05m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_05.f1": {
+				"id": "points3d.fscore.tau_0_05.f1",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score F1 @ 0.05m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_1.precision": {
+				"id": "points3d.fscore.tau_0_1.precision",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score Precision @ 0.1m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_1.recall": {
+				"id": "points3d.fscore.tau_0_1.recall",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score Recall @ 0.1m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_1.f1": {
+				"id": "points3d.fscore.tau_0_1.f1",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score F1 @ 0.1m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_25.precision": {
+				"id": "points3d.fscore.tau_0_25.precision",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score Precision @ 0.25m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_25.recall": {
+				"id": "points3d.fscore.tau_0_25.recall",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score Recall @ 0.25m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_25.f1": {
+				"id": "points3d.fscore.tau_0_25.f1",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score F1 @ 0.25m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_5.precision": {
+				"id": "points3d.fscore.tau_0_5.precision",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score Precision @ 0.5m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_5.recall": {
+				"id": "points3d.fscore.tau_0_5.recall",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score Recall @ 0.5m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
+			},
+			"fscore.tau_0_5.f1": {
+				"id": "points3d.fscore.tau_0_5.f1",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "F-score F1 @ 0.5m",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"reducer": "image_mean",
+				"dependsOn": [
+					"*"
+				]
 			}
 		},
 		"reducers": {},
@@ -2019,6 +2804,52 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 					"*"
 				]
 			},
+			"rho_a.std": {
+				"id": "rays.rho_a.std",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "ρ_A (Std)",
+				"description": "Standard deviation of the per-image ρ_A.",
+				"direction": "none",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "none"
+				},
+				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"rho_a": {
+				"id": "rays.rho_a",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "ρ_A",
+				"description": "Per-image area under the angular-accuracy curve up to the FoV threshold.",
+				"direction": "higher",
+				"bounds": [
+					0,
+					1
+				],
+				"unit": null,
+				"display": {
+					"scale": "complement"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
 			"angular_error.mean_angle": {
 				"id": "rays.angular_error.mean_angle",
 				"kind": "score",
@@ -2056,6 +2887,52 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 					"scale": "relative"
 				},
 				"perItem": false,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"angular_error.mean": {
+				"id": "rays.angular_error.mean",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Mean Angular Error (image)",
+				"description": "Per-image mean angular error.",
+				"direction": "lower",
+				"bounds": [
+					0,
+					180
+				],
+				"unit": "deg",
+				"display": {
+					"scale": "relative"
+				},
+				"perItem": true,
+				"pool": {
+					"form": "none"
+				},
+				"dependsOn": [
+					"*"
+				]
+			},
+			"angular_error.median": {
+				"id": "rays.angular_error.median",
+				"kind": "score",
+				"rev": 1,
+				"displayName": "Median Angular Error (image)",
+				"description": "Per-image median angular error.",
+				"direction": "lower",
+				"bounds": [
+					0,
+					180
+				],
+				"unit": "deg",
+				"display": {
+					"scale": "relative"
+				},
+				"perItem": true,
 				"pool": {
 					"form": "none"
 				},
@@ -2262,6 +3139,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [
 					"gt",
 					"segmentation"
@@ -2288,6 +3166,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [
 					"gt",
 					"segmentation"
@@ -2315,6 +3194,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [
 					"gt",
 					"segmentation"
@@ -2341,6 +3221,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [
 					"gt",
 					"segmentation"
@@ -2368,6 +3249,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "dataset",
 				"requires": [
 					"gt",
 					"segmentation"
@@ -2394,6 +3276,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "dataset",
 				"requires": [
 					"gt",
 					"segmentation"
@@ -2420,6 +3303,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "dataset",
 				"requires": [
 					"gt",
 					"segmentation"
@@ -2576,6 +3460,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [
 					"gt",
 					"segmentation"
@@ -2602,6 +3487,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [
 					"gt",
 					"segmentation"
@@ -2628,6 +3514,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [
 					"gt",
 					"segmentation"
@@ -2655,6 +3542,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -2678,6 +3566,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -2701,6 +3590,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [],
 				"dependsOn": [
 					"*"
@@ -2725,6 +3615,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [],
 				"dependsOn": [
 					"*"
@@ -2748,6 +3639,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [],
 				"dependsOn": [
 					"*"
@@ -2771,6 +3663,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [],
 				"dependsOn": [
 					"*"
@@ -2795,6 +3688,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [
 					"input"
 				],
@@ -2821,6 +3715,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [
 					"input"
 				],
@@ -2847,6 +3742,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"requires": [
 					"input"
 				],
@@ -2873,6 +3769,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -2896,6 +3793,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -2919,6 +3817,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -2942,6 +3841,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -2965,6 +3865,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -2988,6 +3889,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -3011,6 +3913,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -3034,6 +3937,7 @@ export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = {
 				"pool": {
 					"form": "none"
 				},
+				"reducer": "image_mean",
 				"dependsOn": [
 					"*"
 				]
@@ -4068,8 +4972,12 @@ export const PROTOCOL_SCHEMA: GeneratedJson = {
 					],
 					"minItems": 2,
 					"items": {
-						"type": "number"
-					}
+						"type": [
+							"number",
+							"null"
+						]
+					},
+					"description": "n+1 ascending bin edges; the first may be null (open low end, -infinity) and the last null (open high end, +infinity). Inner edges are numbers."
 				},
 				"labels": {
 					"type": [
@@ -4316,6 +5224,11 @@ export const PROTOCOL_SCHEMA: GeneratedJson = {
 							"weight"
 						]
 					}
+				},
+				"reducer": {
+					"type": "string",
+					"minLength": 1,
+					"description": "Name of a protocol.reducers entry that produced the aggregate of cells without a reduction-axis value; their per-item name is the metric name itself."
 				},
 				"requires": {
 					"type": "array",

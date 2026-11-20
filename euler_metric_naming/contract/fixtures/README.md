@@ -48,4 +48,5 @@ offset; the `count` weights are `1000 + 100·k`.
 | `u1`, `u2` | schema `3.0` (unsupported major); `u2` with another cap |
 | `l1`–`l4` | legacy schema 1.3 (euler-eval 2.47): `l1` cropped/none 734×1730 rev 3, `l2` vae_crop 728×1728, `l3` a per-file subset, `l4` without per-file metrics |
 | `m1`, `m3` | legacy muses-like pair, metrics revision 1 vs 3, hierarchical per-file ids (`night~frame-0`) |
+| `r1`–`r4` | RGB-like files without a reduction axis: metrics carry an implicit `reducer` (`image_mean` for PSNR and the binned MAE, `dataset` for FID); fixed GT-depth bins `[0, 1, 5, null]` (open far bin). `r2` a subset with other values, `r3` edges `[0, 1, 10, null]`, `r4` `[null, 1, 5, null]` |
 | `s1`–`s6` | a synthetic modality (`audio.eval`) no vocabulary knows: every term comes from the files' own snapshots. `s2` truncated audio, `s3` sample rate, `s4` subset, `s5` SNR edges, `s6` denoising that does not apply |

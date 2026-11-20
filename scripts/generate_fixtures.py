@@ -483,6 +483,106 @@ def audio(*, items=AUDIO_ITEMS, sample_rate=16000, truncated=12.0, edges=(0, 10,
     }
 
 
+
+# ------------------------------------------------------------------------------ rgb
+
+RGB_AXES = {
+    "category": AxisDeclaration(
+        0, ("image_quality", "depth_binned_photometric"), True, "Metric category"
+    ),
+    "dbin": AxisDeclaration(1, ("all", "near", "mid", "far"), True, "Fixed GT-depth bin"),
+}
+RGB_ITEMS = [f"frame-{i}" for i in range(6)]
+RGB_BINS = ("all", "near", "mid", "far")
+
+
+def rgb(*, items=RGB_ITEMS, offset=0, edges=(0, 1, 5, None), fid=12.0):
+    """An RGB-like file: no reduction axis; implicit reducers; open-ended bins."""
+    rows = {}
+    for item in items:
+        k = int(item.split("-")[1])
+        rows[item] = {"psnr": _round(30.0 + k + offset)}
+        for index, bin_name in enumerate(RGB_BINS):
+            rows[item][bin_name] = _round(0.05 + 0.01 * k + 0.01 * offset + 0.1 * index)
+    builder = ProtocolBuilder("rgb.restoration", ["euler.core", "euler.rgb"])
+    builder.reference(
+        "gt",
+        identity=hash_value({"dataset": {"id": "cerema", "scope": "rgb", "split": None}}),
+        modality="rgb",
+        dataset={"id": "cerema", "variant": None, "split": None, "scope": "rgb"},
+    )
+    builder.params(
+        {
+            "rgb.fid.backend": "builtin",
+            "rgb.depth_bins.policy": "v3",
+            "spatial.method": "none",
+            "spatial.uniform": True,
+        }
+    )
+    builder.population(items, unit="image")
+    builder.stratification(
+        "rgb.depth_bins",
+        {
+            "label": "GT depth (fixed photometric bins)",
+            "variable": "gt_depth_m",
+            "unit": "m",
+            "edges": list(edges),
+            "labels": ["near", "mid", "far"],
+            "closed": "right",
+            "total": "all",
+        },
+    )
+    builder.axis("category", "family").axis("dbin", "stratum", stratification="rgb.depth_bins")
+    names = ["rgb.eval.image_quality.psnr", "rgb.eval.image_quality.fid"] + [
+        f"rgb.eval.depth_binned_photometric.{b}.mae" for b in RGB_BINS
+    ]
+    builder.metrics_for(names, "rgb.eval", RGB_AXES)
+    protocol = builder.build()
+    psnr = {i: r["psnr"] for i, r in rows.items()}
+    tree = {
+        "eval": {
+            "image_quality": {"psnr": _round(recompute("mean", psnr)), "fid": fid},
+            "depth_binned_photometric": {
+                b: {"mae": _round(recompute("mean", {i: r[b] for i, r in rows.items()}))}
+                for b in RGB_BINS
+            },
+        }
+    }
+    files = [
+        {
+            "id": item,
+            "metrics": {
+                "rgb": {
+                    "eval": {
+                        "image_quality": {"psnr": rows[item]["psnr"]},
+                        "depth_binned_photometric": {b: {"mae": rows[item][b]} for b in RGB_BINS},
+                    }
+                }
+            },
+        }
+        for item in items
+    ]
+    namespace = _EvalNamespace(
+        producer="euler-eval",
+        producer_version="3.0.0",
+        modalities=("rgb",),
+        axes=RGB_AXES,
+        descriptions={
+            "psnr": MetricDescription(is_higher_better=True, unit="dB", display_name="PSNR"),
+            "fid": MetricDescription(is_higher_better=False, display_name="FID"),
+            "mae": MetricDescription(is_higher_better=False, display_name="MAE"),
+        },
+    )
+    return {
+        "metricSet": namespace.metric_set_envelope("rgb", metadata={"metric_sets": ["core"]}),
+        "protocol": protocol,
+        "dataset_info": {"num_pairs": len(items)},
+        "meta": {"version": "3.0.0", "modality": "rgb"},
+        "rgb": tree,
+        "per_file_metrics": {"files": files},
+    }
+
+
 # ---------------------------------------------------------------------------- build
 
 
@@ -549,6 +649,11 @@ def build() -> dict:
     files["s4"] = audio(items=["spk1~utt-0", "spk1~utt-1", "spk2~utt-0"])
     files["s5"] = audio(edges=(0, 5, 20, 40))
     files["s6"] = audio(denoise="spectral")
+
+    files["r1"] = rgb()
+    files["r2"] = rgb(items=RGB_ITEMS[:4], offset=1, fid=14.0)
+    files["r3"] = rgb(edges=(0, 1, 10, None))
+    files["r4"] = rgb(edges=(None, 1, 5, None))
     return files
 
 

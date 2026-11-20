@@ -327,7 +327,9 @@ protocol = builder.build()                           # JSON-ready; raises Protoc
 | `series(name, values)` | a per-item series aligned with `items.ids` |
 | `build()` | the validated `protocol` dict |
 
-Terms come from the loaded vocabularies; an unknown key raises `KeyError`
+A metric definition that names an implicit `reducer` (for cells without a
+reduction axis) brings that reducer along. Terms come from the loaded
+vocabularies; an unknown key raises `KeyError`
 unless its descriptor or definition is passed explicitly. `check_protocol(p)`
 / `protocol_problems(p)` validate any block structurally (closed sets, v1
 parameter limits, shapes).

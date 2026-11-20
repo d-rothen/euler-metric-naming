@@ -95,7 +95,8 @@ export interface Stratification {
 	label?: string;
 	variable?: string | null;
 	unit?: string | null;
-	edges?: number[] | null;
+	/** n+1 ascending edges; the first and/or last may be null (open end: −∞ / +∞). */
+	edges?: (number | null)[] | null;
 	labels?: string[] | null;
 	closed?: string | null;
 	lastClosed?: boolean | null;
@@ -134,6 +135,8 @@ export interface MetricDefinition {
 	display?: { scale: DisplayScale | string; fullAt?: number; unit?: string | null };
 	perItem?: boolean;
 	pool?: { form: PoolForm | string; weight?: string };
+	/** Reducer (a protocol.reducers name) of cells without a reduction-axis value. */
+	reducer?: string;
 	requires?: string[];
 	dependsOn?: string[];
 	vocabulary?: string;
@@ -840,16 +843,24 @@ export function identityProjection(stratification: unknown): { [key: string]: un
 	return out;
 }
 
-function binRange(stratification: unknown, label: string): [number, number] | null {
+/** Edges of section 4.6: at least two; inner ones numbers; the first and last may be null. */
+export function validEdges(edges: unknown): edges is (number | null)[] {
+	if (!Array.isArray(edges) || edges.length < 2) return false;
+	const last = edges.length - 1;
+	return edges.every((edge, index) => isNumber(edge) || (edge === null && (index === 0 || index === last)));
+}
+
+/** [lo, hi] of a bin label (null = open end); the total spans first to last edge. */
+function binRange(stratification: unknown, label: string): [number | null, number | null] | null {
 	if (!isRecord(stratification)) return null;
 	const edges = stratification.edges;
-	if (!Array.isArray(edges) || edges.length < 2 || !edges.every(isNumber)) return null;
-	if (label === stratification.total) return [edges[0] as number, edges[edges.length - 1] as number];
+	if (!validEdges(edges)) return null;
+	if (label === stratification.total) return [edges[0] as number | null, edges[edges.length - 1] as number | null];
 	const labels = stratification.labels;
 	if (!Array.isArray(labels) || labels.length !== edges.length - 1) return null;
 	const index = labels.indexOf(label);
 	if (index < 0) return null;
-	return [edges[index] as number, edges[index + 1] as number];
+	return [edges[index] as number | null, edges[index + 1] as number | null];
 }
 
 /** Edges of the sqrt_equal_width scheme (euler-eval's benchmark bins). */
@@ -1650,6 +1661,7 @@ function mergedDefinition(a: Rec | null, b: Rec | null): Rec {
 	const poolA = isRecord(a.pool) ? a.pool : { form: 'none' };
 	const poolB = isRecord(b.pool) ? b.pool : { form: 'none' };
 	merged.pool = jsonEqual(poolA, poolB) ? poolA : { form: 'none' };
+	if (!jsonEqual(get(a, 'reducer'), get(b, 'reducer'))) delete merged.reducer;
 	return merged;
 }
 
@@ -1816,8 +1828,8 @@ function binsText(stratA: Rec, stratB: Rec, value: string): string {
 	const rangeA = binRange(stratA, value);
 	const rangeB = binRange(stratB, value);
 	if (rangeA === null || rangeB === null) return `bins differ (${value})`;
-	const textA = withUnit(`${formatSig3(rangeA[0])}–${formatSig3(rangeA[1])}`, stratA);
-	const textB = withUnit(`${formatSig3(rangeB[0])}–${formatSig3(rangeB[1])}`, stratB);
+	const textA = withUnit(`${edgeText(rangeA[0], true)}–${edgeText(rangeA[1], false)}`, stratA);
+	const textB = withUnit(`${edgeText(rangeB[0], true)}–${edgeText(rangeB[1], false)}`, stratB);
 	if (textA !== textB) return `bins differ (${value} ${textA} vs ${textB})`;
 	const edgesA = withUnit(edgesText(stratA), stratA);
 	const edgesB = withUnit(edgesText(stratB), stratB);
@@ -1825,8 +1837,15 @@ function binsText(stratA: Rec, stratB: Rec, value: string): string {
 	return `bins differ (${value})`;
 }
 
+/** An edge in phrases: 3 significant digits; an open end is −∞ / ∞. */
+function edgeText(value: number | null, low: boolean): string {
+	if (value === null) return low ? '−∞' : '∞';
+	return formatSig3(value);
+}
+
 function edgesText(stratification: Rec): string {
-	return '[' + (stratification.edges as number[]).map((edge) => formatSig3(edge)).join(', ') + ']';
+	const edges = stratification.edges as (number | null)[];
+	return '[' + edges.map((edge, index) => edgeText(edge, index === 0)).join(', ') + ']';
 }
 
 function withUnit(text: string, stratification: Rec): string {
@@ -1913,17 +1932,22 @@ function population(
 	];
 }
 
-function recomputeOp(contract: Rec, side: Side): string | null {
-	const value = cellValue(side.cell, 'reduction');
-	if (value === null) return null;
+/** The recompute op of the cell's reducer: its reduction-axis value's, else the metric's `reducer`. */
+function recomputeOp(contract: Rec, side: Side, definition: Rec): string | null {
+	let value = cellValue(side.cell, 'reduction');
+	if (value === null) {
+		const implicit = definition.reducer;
+		if (typeof implicit !== 'string') return null;
+		value = implicit;
+	}
 	const reducer = rec(contract.reducers)[value];
 	const op = isRecord(reducer) ? reducer.recompute : null;
 	return op === 'mean' || op === 'median' || op === 'pool' ? op : null;
 }
 
 function pairable(a: Rec, b: Rec, sideA: Side, sideB: Side, definition: Rec, options: CompareOptions): boolean {
-	const op = recomputeOp(a, sideA);
-	if (op === null || op !== recomputeOp(b, sideB)) return false;
+	const op = recomputeOp(a, sideA, definition);
+	if (op === null || op !== recomputeOp(b, sideB, definition)) return false;
 	if (options.perItemA == null || options.perItemB == null) return false;
 	const namesA = new Set(options.perItemA);
 	const namesB = new Set(options.perItemB);
@@ -2032,13 +2056,13 @@ export function recomputeCell(
 ): number | null {
 	const side = decomposeCell(contract as Rec, metricName);
 	if (side === null) return null;
-	const op = recomputeOp(contract as Rec, side);
+	const definition = definitionOf(contract as Rec, side.cell.base) ?? {};
+	const op = recomputeOp(contract as Rec, side, definition);
 	if (op === null) return null;
 	const values = perItemValues(file, perItem(side, side.cell.base));
 	let weights: { [item: string]: unknown } | null = null;
 	let form: string | null = null;
 	if (op === 'pool') {
-		const definition = definitionOf(contract as Rec, side.cell.base) ?? {};
 		const pool = rec(definition.pool);
 		form = typeof pool.form === 'string' ? pool.form : null;
 		const weight = pool.weight;

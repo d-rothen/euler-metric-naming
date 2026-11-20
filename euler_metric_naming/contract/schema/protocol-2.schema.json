@@ -423,8 +423,12 @@
           ],
           "minItems": 2,
           "items": {
-            "type": "number"
-          }
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "description": "n+1 ascending bin edges; the first may be null (open low end, -infinity) and the last null (open high end, +infinity). Inner edges are numbers."
         },
         "labels": {
           "type": [
@@ -671,6 +675,11 @@
               "weight"
             ]
           }
+        },
+        "reducer": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of a protocol.reducers entry that produced the aggregate of cells without a reduction-axis value; their per-item name is the metric name itself."
         },
         "requires": {
           "type": "array",

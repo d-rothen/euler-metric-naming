@@ -57,6 +57,23 @@
       },
       "description": "Fraction of largest residuals excluded from the fit."
     },
+    "depth.alignment.fit_max_gt_percentile": {
+      "label": "depth alignment GT percentile",
+      "role": "definition",
+      "appliesWhen": {
+        "param": "depth.alignment.applied",
+        "op": "eq",
+        "value": true
+      },
+      "affects": {
+        "axes": {
+          "space": [
+            "metric"
+          ]
+        }
+      },
+      "description": "Upper GT-depth percentile of the pixels the scale/shift fit uses (95 under GT sky masking); null when every valid pixel is used."
+    },
     "depth.input_space": {
       "label": "input depth space",
       "role": "provenance",
@@ -381,6 +398,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -404,6 +422,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -427,6 +446,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -450,6 +470,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "dataset",
       "dependsOn": [
         "*"
       ]
@@ -473,6 +494,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "dataset",
       "dependsOn": [
         "*"
       ]
@@ -496,6 +518,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "dataset",
       "dependsOn": [
         "*"
       ]

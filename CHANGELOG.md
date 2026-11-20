@@ -26,13 +26,16 @@
 - The frozen schema-1 legacy adapter (`contract/legacy/protocol-1.json`):
   euler-eval ≤ 2.47 files normalize into v2 contracts.
 - `load_eval_file`: whole `eval.json` files flattened as euler-view does.
+- Open-ended stratification bins (`null` first / last edge) and an implicit
+  per-metric `reducer` for cells without a reduction axis (RGB, depth image
+  quality, FID), so such metrics pair on shared files too.
 - JSON Schemas `protocol-2.schema.json` and `vocabulary-1.schema.json`
   (draft 2020-12).
 - A dependency-free TS artifact for consumers (`contract/ts/`), generated
   data included, type-checked under strict TypeScript and runnable with
   Node's type stripping.
 - Conformance fixtures (`contract/fixtures/`) both implementations pass,
-  including 28 eval files and 41 hand-derived verdicts.
+  including 32 eval files and 48 hand-derived verdicts.
 - Package data: schemas, vocabularies, the legacy table, the TS artifact and
   the fixtures ship in the wheel.
 

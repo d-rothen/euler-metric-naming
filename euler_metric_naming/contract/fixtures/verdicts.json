@@ -304,6 +304,57 @@
       "a": "s1.json", "b": "s6.json",
       "metric": "audio.eval.clip_mean.sisdr",
       "tier": "same", "label": "same protocol", "codes": [], "shared": null
+    },
+    {
+      "name": "RGB without a reduction axis: implicit image-mean reducer pairs PSNR",
+      "a": "r1.json", "b": "r2.json",
+      "metric": "rgb.eval.image_quality.psnr",
+      "tier": "paired", "label": "compared on 4 shared files",
+      "codes": ["population_paired"], "shared": 4,
+      "recompute": {"a": 31.5, "b": 32.5}
+    },
+    {
+      "name": "RGB without a reduction axis: FID's implicit reducer is the dataset",
+      "a": "r1.json", "b": "r2.json",
+      "metric": "rgb.eval.image_quality.fid",
+      "tier": "comparable", "label": "comparable · computed on different files: 4 of 6 shared",
+      "codes": ["population_partial"], "shared": 4
+    },
+    {
+      "name": "RGB: binned metric with an implicit reducer, open-ended bin",
+      "a": "r1.json", "b": "r2.json",
+      "metric": "rgb.eval.depth_binned_photometric.far.mae",
+      "tier": "paired", "label": "compared on 4 shared files",
+      "codes": ["population_paired"], "shared": 4,
+      "recompute": {"a": 0.365, "b": 0.375}
+    },
+    {
+      "name": "open-ended bins: the far bin differs",
+      "a": "r1.json", "b": "r3.json",
+      "metric": "rgb.eval.depth_binned_photometric.far.mae",
+      "tier": "incomparable", "label": "not comparable · bins differ (far 5–∞ m vs 10–∞ m)",
+      "codes": ["stratification"], "shared": null
+    },
+    {
+      "name": "open-ended bins: total bin reads the same, edges shown",
+      "a": "r1.json", "b": "r3.json",
+      "metric": "rgb.eval.depth_binned_photometric.all.mae",
+      "tier": "incomparable",
+      "label": "not comparable · bins differ (all: edges [0, 1, 5, ∞] m vs [0, 1, 10, ∞] m)",
+      "codes": ["stratification"], "shared": null
+    },
+    {
+      "name": "open-ended bins: open low end",
+      "a": "r1.json", "b": "r4.json",
+      "metric": "rgb.eval.depth_binned_photometric.near.mae",
+      "tier": "incomparable", "label": "not comparable · bins differ (near 0–1 m vs −∞–1 m)",
+      "codes": ["stratification"], "shared": null
+    },
+    {
+      "name": "open-ended bins: unbinned metric unaffected",
+      "a": "r1.json", "b": "r3.json",
+      "metric": "rgb.eval.image_quality.psnr",
+      "tier": "same", "label": "same protocol", "codes": [], "shared": null
     }
   ]
 }

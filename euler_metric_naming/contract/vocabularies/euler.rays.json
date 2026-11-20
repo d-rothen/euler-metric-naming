@@ -73,6 +73,52 @@
         "*"
       ]
     },
+    "rho_a.std": {
+      "id": "rays.rho_a.std",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "ρ_A (Std)",
+      "description": "Standard deviation of the per-image ρ_A.",
+      "direction": "none",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "none"
+      },
+      "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "rho_a": {
+      "id": "rays.rho_a",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "ρ_A",
+      "description": "Per-image area under the angular-accuracy curve up to the FoV threshold.",
+      "direction": "higher",
+      "bounds": [
+        0,
+        1
+      ],
+      "unit": null,
+      "display": {
+        "scale": "complement"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
     "angular_error.mean_angle": {
       "id": "rays.angular_error.mean_angle",
       "kind": "score",
@@ -110,6 +156,52 @@
         "scale": "relative"
       },
       "perItem": false,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "angular_error.mean": {
+      "id": "rays.angular_error.mean",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Mean Angular Error (image)",
+      "description": "Per-image mean angular error.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        180
+      ],
+      "unit": "deg",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
+      "pool": {
+        "form": "none"
+      },
+      "dependsOn": [
+        "*"
+      ]
+    },
+    "angular_error.median": {
+      "id": "rays.angular_error.median",
+      "kind": "score",
+      "rev": 1,
+      "displayName": "Median Angular Error (image)",
+      "description": "Per-image median angular error.",
+      "direction": "lower",
+      "bounds": [
+        0,
+        180
+      ],
+      "unit": "deg",
+      "display": {
+        "scale": "relative"
+      },
+      "perItem": true,
       "pool": {
         "form": "none"
       },

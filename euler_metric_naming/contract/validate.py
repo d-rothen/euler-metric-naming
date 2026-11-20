@@ -27,6 +27,7 @@ from .closed import (
 )
 from .conditions import condition_problems
 from .hashing import valid_rev
+from .strata import valid_edges
 
 _HASH_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 _VERSION_RE = re.compile(r"^(\d+)\.(\d+)$")
@@ -161,6 +162,10 @@ def metric_problems(definition: Any, path: str) -> list[str]:
             problems.append(f"{path}.pool.form must be one of {', '.join(POOL_FORMS)}")
         elif pool["form"] != "none" and not (isinstance(pool.get("weight"), str) and pool["weight"]):
             problems.append(f"{path}.pool.weight is required for form {pool['form']!r}")
+    if "reducer" in definition and not (
+        isinstance(definition["reducer"], str) and definition["reducer"]
+    ):
+        problems.append(f"{path}.reducer must name a reducer")
     if "requires" in definition and not _string_list(definition["requires"]):
         problems.append(f"{path}.requires must be a list of reference roles")
     if "dependsOn" in definition and not _string_list(definition["dependsOn"]):
@@ -183,9 +188,13 @@ def stratification_problems(stratification: Any, path: str) -> list[str]:
     edges = stratification.get("edges")
     categories = stratification.get("categories")
     if edges is not None:
-        if not (isinstance(edges, list) and len(edges) >= 2 and all(is_number(e) for e in edges)):
-            problems.append(f"{path}.edges must be a list of at least two numbers")
-        elif any(b <= a for a, b in zip(edges, edges[1:])):
+        if not valid_edges(edges):
+            problems.append(
+                f"{path}.edges must be at least two numbers (the first and last may be null)"
+            )
+        elif any(
+            a is not None and b is not None and b <= a for a, b in zip(edges, edges[1:])
+        ):
             problems.append(f"{path}.edges must be strictly ascending")
         else:
             labels = stratification.get("labels")
@@ -310,6 +319,9 @@ def protocol_problems(protocol: Any) -> list[str]:
         metrics = {}
     for base, definition in metrics.items():
         problems.extend(metric_problems(definition, f"metrics.{base}"))
+        reducer = definition.get("reducer") if isinstance(definition, dict) else None
+        if isinstance(reducer, str) and reducer and reducer not in reducers:
+            problems.append(f"metrics.{base}.reducer {reducer!r} is not in reducers")
 
     items = protocol.get("items")
     if items is not None:

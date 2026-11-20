@@ -113,7 +113,8 @@ global `id`:
 | `display` | `relative` (default), `complement` (bounded scores such as δ, SSIM, IoU: relative difference of `bound − value`), `absolute` with `fullAt` (dB: PSNR at 2), or `none` |
 | `perItem` | `true` when per-item values are written to `per_file_metrics` |
 | `pool` | `{"form": "mean" \| "rms", "weight": "<statistic base>"}` when a pooled aggregate equals the weighted mean (or RMS) of per-item values; `{"form": "none"}` otherwise (SILog, quantiles, FID) |
-| `requires` | the reference roles the value depends on; omit for "all roles" (strict). Narrow only when provable (no-reference RGB metrics: `["input"]`) |
+| `reducer` | for metrics written **without** a reduction-axis segment: the reducer that produced the aggregate from the per-item values of the same name — `image_mean` when the aggregate is exactly the mean of the per-file values (nulls skipped), `dataset` for FID/KID. Omit when the aggregate is not such a reduction (pooled quantiles such as RGB tail errors, means that leave items out such as RGB edge F1) |
+| `requires` | the reference roles the value depends on; omit for "all roles" (strict). Narrow only when provable (no-reference RGB metrics read no reference: `[]`; Hautière: `["input"]`) |
 | `dependsOn` | globs over keys; `["*"]` unless the metric provably ignores whole areas |
 
 Write per-item values of scores in `per_file_metrics` under the per-item name
@@ -134,7 +135,8 @@ builder.stratification("depth.gt_range", sqrt_stratification(0.01, 80))
 builder.axis("bin", "stratum", stratification="depth.gt_range")
 ```
 
-Give `edges` with `labels` (or `categories`), `total` for the union bin,
+Give `edges` with `labels` (or `categories`), `total` for the union bin
+(the first and last edge may be `null` for an open end, e.g. `[0, 1, 5, null]`),
 `variable`, `unit`, and `after` (keys applied before binning). Everything but
 `label`, `description`, `unit` and null fields is its identity: two
 evaluations' bins are the same only when those are equal. A named `scheme`
@@ -169,6 +171,8 @@ it (`uv run pytest`), and regenerate the TS data
 - Changing what a metric computes MUST increase that metric's `rev` (files
   with different `rev`s are not comparable for it).
 - Labels, descriptions and hints may change in a minor bump.
+- A new optional field of the protocol schema is only a minor when ignoring
+  it makes an older consumer stricter, never laxer (contract §6).
 - Vocabulary changes never change the protocol `schemaVersion`; files carry
   their own snapshot, so old files keep meaning what they meant.
 - The legacy table (`contract/legacy/protocol-1.json`) is frozen: it holds

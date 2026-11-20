@@ -142,8 +142,9 @@ items:
 | `pool` | the metric's `pool` form, weighted by its weight statistic (3.8) |
 | `none` | not recomputable from per-item values |
 
-Both sides must give the cell's reduction value the same `recompute`; a
-missing reducer counts as `none`. Mean and pooled sums run over the items in
+The cell's reducer is the reducer of its reduction-axis value, or, for a
+cell without one, the metric definition's `reducer` (4.9). Both sides must
+give it the same `recompute`; a missing reducer counts as `none`. Mean and pooled sums run over the items in
 code-point order of their ids.
 
 ### 3.8 Pool forms (`metric.pool.form`)
@@ -311,8 +312,11 @@ definition key.
 }
 ```
 
-Either `edges` (n+1 numbers, ascending) with `labels` (n strings), or
-`categories` (list of strings) for categorical strata. `total` names the
+Either `edges` (n+1 entries, strictly ascending) with `labels` (n strings),
+or `categories` (list of strings) for categorical strata. Inner edges are
+numbers; the first edge may be `null` (the bin is open below, −∞) and the
+last `null` (open above, +∞), e.g. `[0, 1, 5, null]` for near ≤ 1 m,
+mid ≤ 5 m, far > 5 m. `total` names the
 stratum label that covers the union. The **identity projection** of a
 stratification is the object without `label`, `description` and `unit`, and
 without properties whose value is `null` (so `"categories": null` and a
@@ -349,6 +353,7 @@ consumed axis segments are removed (euler-metric-naming `decompose`).
 | `display` | `{"scale": 3.4, "fullAt"?, "unit"?}` | `{"scale": "relative"}` |
 | `perItem` | boolean: per-item values are written | `false` |
 | `pool` | `{"form": 3.8, "weight": "<base name of a statistic>"}` | `{"form": "none"}` |
+| `reducer` | name of a `protocol.reducers` entry that produced the aggregate of a cell **without** a reduction-axis value (4.11); e.g. `image_mean` for an image-mean PSNR, `dataset` for FID | — (such cells are not recomputable) |
 | `requires` | [reference role] | all roles (strict) |
 | `dependsOn` | [glob over keys] | `["*"]` (strict) |
 | `vocabulary` | `<vocabulary id>@<version>` the definition comes from | — |
@@ -372,8 +377,9 @@ stores them like per-file metrics. Score metrics stay in `per_file_metrics`.
 
 - The aggregate metric name is `namespace.axes….base`.
 - Its **per-item name** is the same name with the segment of the axis whose
-  role is `reduction` removed. Per-item values of score metrics are written in
-  `per_file_metrics` under that name.
+  role is `reduction` removed; a name without such a segment (a metric with
+  an implicit `reducer`, 4.9) is its own per-item name. Per-item values of
+  score metrics are written in `per_file_metrics` under that name.
 - The **weight series** of an aggregate with `recompute: pool` is the
   per-item name with the base replaced by `metric.pool.weight`
   (e.g. `depth.eval.metric.standard.near.absrel` →
@@ -404,6 +410,10 @@ metric computes MUST increase that metric's `rev`.
 - `schemaVersion` is `"MAJOR.MINOR"`. This document defines major 2.
 - **Minor** (2.0 → 2.1): adding optional properties, new descriptor fields
   that consumers may ignore without changing verdicts, documentation.
+  A minor may only add fields whose omission by an older consumer makes
+  verdicts **stricter, never laxer**: a consumer that ignores the field must
+  reach the same or a more severe tier (for example, without `metric.reducer`
+  a cell is merely not pairable). Anything else is a major change.
   Consumers MUST accept any minor of a major they support and ignore
   unknown properties.
 - **Major**: any change to section 3 (roles, compare rules, observation kinds
@@ -510,7 +520,8 @@ The metric definition is looked up by base name. When only one side has one,
 it is used. When both do, they are merged strictly so the verdict does not
 depend on the order of the sides: `requires` is the union (absent on either
 side: all roles), `dependsOn` the union (absent: `["*"]`), `pool` the common
-value when JSON-equal, else `{"form": "none"}`; display fields come from `A`.
+value when JSON-equal, else `{"form": "none"}`, `reducer` the common value
+when JSON-equal, else none; display fields come from `A`.
 Different `rev`s are judged by 8.2.
 
 **8.2 Revision.** Both definitions record `rev` and they differ →
@@ -526,12 +537,13 @@ identity projections differ → `incomparable`, code `stratification`, text
 `bins differ (<bin> <a> vs <b>)` where each side is `<lo>–<hi>` of that bin
 (the total bin spans the first to the last edge), followed by ` <unit>` when
 the stratification has one, e.g.
-`bins differ (near 0.01–3.81 m vs 0.01–11.6 m)`. When the two sides' texts
+`bins differ (near 0.01–3.81 m vs 0.01–11.6 m)`; an open end prints as `−∞`
+(low) or `∞` (high), e.g. `bins differ (far 5–∞ m vs 10–∞ m)`. When the two sides' texts
 are identical (e.g. the total bin while inner edges differ) the phrase shows
 the edge lists instead: `bins differ (<bin>: edges <e1> vs <e2>)`, each list
 the stratification's edges in the 3-significant-digit format joined by `, `
-in `[` `]`, followed by ` <unit>` when present, e.g.
-`bins differ (all: edges [0, 10, 20, 40] dB vs [0, 5, 20, 40] dB)`. When the
+in `[` `]` (open ends as `−∞` / `∞`), followed by ` <unit>` when present,
+e.g. `bins differ (all: edges [0, 10, 20, 40] dB vs [0, 5, 20, 40] dB)`. When the
 bin has no edges on a side (categorical, or the label is missing there), or
 the edge lists read the same too, the text is `bins differ (<bin>)`.
 
@@ -596,12 +608,13 @@ of its `items.series`.
 - Otherwise, when both id sets are known: `N = |IA ∩ IB|`.
   - `N = 0` → `incomparable`, code `population_disjoint`,
     text `no shared files`.
-  - The cell is **pairable** when it has a reduction value whose reducer has
-    the same `recompute ≠ none` on both sides (3.7), its per-item name (4.11)
-    has values on both sides, and for `pool` the (merged) metric has
+  - The cell is **pairable** when its reducer (3.7: the reducer of its
+    reduction-axis value, else the merged metric definition's `reducer`) has
+    the same `recompute ≠ none` on both sides, its per-item name (4.11) has
+    values on both sides, and for `pool` the (merged) metric has
     `pool.form ≠ none` and its weight series exists on both sides. A cell
-    without a reduction value is not pairable: nothing says how its
-    aggregate follows from per-item values.
+    without a reduction value and without a metric `reducer` is not
+    pairable: nothing says how its aggregate follows from per-item values.
     Pairable → `paired`, code `population_paired`, `shared = N`, text
     `compared on N shared files`. The consumer recomputes both values on the
     shared items.

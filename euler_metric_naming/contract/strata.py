@@ -23,14 +23,27 @@ def identity_projection(stratification: Any) -> dict:
     }
 
 
+def valid_edges(edges: Any) -> bool:
+    """Edges of §4.6: at least two; inner ones numbers; the first and last may be
+    ``None`` (an open end, −∞ / +∞)."""
+    if not isinstance(edges, list) or len(edges) < 2:
+        return False
+    last = len(edges) - 1
+    return all(
+        is_number(edge) or (edge is None and index in (0, last))
+        for index, edge in enumerate(edges)
+    )
+
+
 def bin_range(stratification: Any, label: str) -> Optional[tuple]:
-    """``(lo, hi)`` of a bin label, the total spanning first to last edge."""
+    """``(lo, hi)`` of a bin label, the total spanning first to last edge.
+
+    An open end is ``None``. Returns ``None`` when the bin has no edges.
+    """
     if not isinstance(stratification, dict):
         return None
     edges = stratification.get("edges")
-    if not isinstance(edges, list) or len(edges) < 2:
-        return None
-    if not all(is_number(edge) for edge in edges):
+    if not valid_edges(edges):
         return None
     if label == stratification.get("total"):
         return (edges[0], edges[-1])

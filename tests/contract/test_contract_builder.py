@@ -274,3 +274,40 @@ def test_public_api_is_exported():
     for name in contract.__all__:
         assert hasattr(contract, name), name
     json.dumps(contract.closed_sets())
+
+
+def test_open_ended_edges_validate_only_at_the_ends():
+    def problems(edges):
+        return protocol_problems(
+            {"schemaVersion": "2.0", "parameters": {},
+             "stratifications": {"s": {"edges": edges, "labels": ["a", "b", "c"]}}}
+        )
+
+    assert problems([None, 1, 5, None]) == []
+    assert problems([0, 1, 5, None]) == []
+    assert any("at least two numbers" in p for p in problems([0, None, 5, 9]))
+    assert any("ascending" in p for p in problems([None, 5, 1, None]))
+
+
+def test_builder_records_the_reducer_a_metric_names():
+    builder = ProtocolBuilder("rgb.restoration", ["euler.rgb"])  # euler.core not loaded
+    builder.metric("psnr").metric("fid")
+    protocol = builder.build()
+    assert protocol["metrics"]["psnr"]["reducer"] == "image_mean"
+    assert set(protocol["reducers"]) == {"image_mean", "dataset"}
+    assert protocol["reducers"]["dataset"]["recompute"] == "none"
+    dangling = ProtocolBuilder("x", [])
+    dangling.metric("m", {"id": "x.m", "rev": 1, "reducer": "nowhere"})
+    with pytest.raises(ProtocolValidationError, match="not in reducers"):
+        dangling.build()
+
+
+def test_implicit_reducers_must_agree_to_pair():
+    a = _contract(metrics={"psnr": {"rev": 1, "reducer": "image_mean"}},
+                  reducers={"image_mean": {"recompute": "mean"}})
+    b = _contract(metrics={"psnr": {"rev": 1, "reducer": "image_median"}},
+                  reducers={"image_median": {"recompute": "median"}})
+    name = "depth.eval.metric.image_quality.psnr"
+    per_item = {name}
+    assert compare(a, a, name, {"x", "y"}, {"x"}, per_item, per_item).codes == ["population_paired"]
+    assert compare(a, b, name, {"x", "y"}, {"x"}, per_item, per_item).codes == ["population_partial"]

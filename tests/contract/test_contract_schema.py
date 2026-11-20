@@ -86,10 +86,18 @@ def test_vocabulary_ids_and_terms():
                 {"schemaVersion": "2.0", "parameters": {}, "descriptors": {key: descriptor}}
             )
             assert problems == [], (key, problems)
+        core_reducers = load_vocabulary("euler.core").reducers
         for base, definition in document["metrics"].items():
             assert definition["rev"] == 1, base
+            if "reducer" in definition:
+                assert definition["reducer"] in core_reducers, base
             problems = protocol_problems(
-                {"schemaVersion": "2.0", "parameters": {}, "metrics": {base: definition}}
+                {
+                    "schemaVersion": "2.0",
+                    "parameters": {},
+                    "metrics": {base: definition},
+                    "reducers": core_reducers,
+                }
             )
             assert problems == [], (base, problems)
 

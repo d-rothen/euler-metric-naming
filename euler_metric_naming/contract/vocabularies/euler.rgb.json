@@ -83,6 +83,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [
         "gt",
         "segmentation"
@@ -109,6 +110,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [
         "gt",
         "segmentation"
@@ -136,6 +138,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [
         "gt",
         "segmentation"
@@ -162,6 +165,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [
         "gt",
         "segmentation"
@@ -189,6 +193,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "dataset",
       "requires": [
         "gt",
         "segmentation"
@@ -215,6 +220,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "dataset",
       "requires": [
         "gt",
         "segmentation"
@@ -241,6 +247,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "dataset",
       "requires": [
         "gt",
         "segmentation"
@@ -397,6 +404,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [
         "gt",
         "segmentation"
@@ -423,6 +431,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [
         "gt",
         "segmentation"
@@ -449,6 +458,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [
         "gt",
         "segmentation"
@@ -476,6 +486,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -499,6 +510,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -522,6 +534,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [],
       "dependsOn": [
         "*"
@@ -546,6 +559,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [],
       "dependsOn": [
         "*"
@@ -569,6 +583,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [],
       "dependsOn": [
         "*"
@@ -592,6 +607,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [],
       "dependsOn": [
         "*"
@@ -616,6 +632,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [
         "input"
       ],
@@ -642,6 +659,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [
         "input"
       ],
@@ -668,6 +686,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "requires": [
         "input"
       ],
@@ -694,6 +713,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -717,6 +737,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -740,6 +761,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -763,6 +785,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -786,6 +809,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -809,6 +833,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -832,6 +857,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
@@ -855,6 +881,7 @@
       "pool": {
         "form": "none"
       },
+      "reducer": "image_mean",
       "dependsOn": [
         "*"
       ]
