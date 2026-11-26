@@ -1,20 +1,11 @@
-"""Soft dependency on euler-dataset-contract for modality validation."""
+"""Modality validation against the euler-dataset-contract registry."""
 from __future__ import annotations
 
-try:
-    from euler_dataset_contract import (  # type: ignore[import-not-found]
-        get_modality_meta_fields,
-    )
-
-    _has_contract = True
-except ImportError:
-    _has_contract = False
+from euler_dataset_contract import get_modality_meta_fields
 
 
 def validate_modality(name: str) -> str | None:
     """Return a warning message if *name* is not a known modality, or None."""
-    if not _has_contract:
-        return None
     try:
         fields = get_modality_meta_fields(name)
     except (KeyError, ValueError):

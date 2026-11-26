@@ -38,25 +38,6 @@ jobs:
       - name: Run tests
         run: uv run pytest -q
 
-  contract-extra:
-    name: Optional modality contract
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          python-version: "3.13"
-          enable-cache: true
-
-      - name: Install package with contract integration
-        run: uv sync --locked --extra dev --extra contract
-
-      - name: Run tests
-        run: uv run pytest -q
-
   lint:
     name: Lint
     runs-on: ubuntu-latest

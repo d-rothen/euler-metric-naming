@@ -12,6 +12,7 @@ from euler_metric_naming.contract import (
     legacy_table,
     load_vocabulary,
     protocol_problems,
+    vocabulary_problems,
 )
 
 jsonschema = pytest.importorskip("jsonschema")
@@ -69,6 +70,33 @@ def test_vocabularies_validate(vocabulary_id):
     assert document["id"] == vocabulary_id
     expected = {"euler.depth": "1.1"}.get(vocabulary_id, "1.0")
     assert document["version"] == expected
+
+
+def _invalid_vocabularies():
+    base = load_vocabulary("euler.rgb").document
+    cases = {
+        "no reducers": lambda d: d.pop("reducers"),
+        "bad id": lambda d: d.update(id="RGB"),
+        "bad version": lambda d: d.update(version="1"),
+        "bad context": lambda d: d.update(context="infer"),
+        "tagged metric": lambda d: next(iter(d["metrics"].values())).update(vocabulary="x@1.0"),
+        "metric without direction": lambda d: next(iter(d["metrics"].values())).pop("direction"),
+        "bad descriptor key": lambda d: d["descriptors"].update(flat={"role": "definition"}),
+        "bad role": lambda d: next(iter(d["descriptors"].values())).update(role="knob"),
+        "bad recompute": lambda d: d["reducers"].update(r={"recompute": "sum"}),
+        "scheme without label": lambda d: d.update(stratificationSchemes={"s": {}}),
+    }
+    for name, mutate in cases.items():
+        document = json.loads(json.dumps(base))
+        mutate(document)
+        yield pytest.param(document, id=name)
+
+
+@pytest.mark.parametrize("document", list(_invalid_vocabularies()))
+def test_vocabulary_problems_agree_with_the_schema(document):
+    schema_errors = list(_validator(VOCABULARY).iter_errors(document))
+    assert schema_errors, "the mutation must break the schema"
+    assert vocabulary_problems(document), [e.message for e in schema_errors]
 
 
 def test_vocabulary_ids_and_terms():

@@ -11,8 +11,9 @@ This guide is for producers (euler-eval, or any evaluator) adding terms.
 
 ## Where terms live
 
-Vocabularies are JSON documents in
-[`euler_metric_naming/contract/vocabularies/`](../euler_metric_naming/contract/vocabularies/),
+Vocabularies are JSON documents, shipped in
+[`euler_metric_naming/contract/vocabularies/`](../euler_metric_naming/contract/vocabularies/)
+or installed by other packages ([below](#installing-a-vocabulary-from-your-own-package)),
 validated by
 [`vocabulary-1.schema.json`](../euler_metric_naming/contract/schema/vocabulary-1.schema.json):
 
@@ -164,9 +165,51 @@ vocabulary, or inline. The conformance fixtures `evals/s1.json`–`s6.json`
 are a modality (`audio.eval`) no vocabulary knows; euler-view judges them with
 the same code as depth.
 
-To ship the terms for reuse, add `contract/vocabularies/<id>.json`, validate
-it (`uv run pytest`), and regenerate the TS data
-(`python scripts/generate_ts.py`).
+To ship the terms for reuse, publish them from your own package (next
+section); no pull request to this repository is needed.
+
+## Installing a vocabulary from your own package
+
+Every vocabulary of an environment is in one registry, and the shipped
+`euler.*` documents get there the same way installed ones do. Declare yours
+as an entry point in the `euler.vocabularies` group (the suite's extension
+protocol, `euler_dataset_contract.extensions`); the entry-point **name is the
+vocabulary id**:
+
+```toml
+# your package's pyproject.toml
+[project.entry-points."euler.vocabularies"]
+"mylab.thermal" = "my_lab.euler:THERMAL_VOCABULARY"
+```
+
+```python
+# my_lab/euler.py: a mapping, a JSON path, or a zero-argument callable
+THERMAL_VOCABULARY = "vocabularies/mylab.thermal.json"  # relative to this module
+```
+
+After `pip install my-lab`, `ProtocolBuilder("thermal.dense", ["euler.core",
+"mylab.thermal"])` snapshots your terms (`"vocabulary": "mylab.thermal@1.0"`)
+in every process of that environment. The rules, the same for every
+vocabulary:
+
+- the document must be a valid `vocabulary-1` document
+  (`vocabulary_problems(document)` lists what is wrong, the same rules as
+  `vocabulary-1.schema.json`), and its `id` must be the entry-point name;
+- a shipped id (`euler.core`, `euler.depth`, …) cannot be redefined: the
+  installed document is rejected with code `shadows_builtin`;
+- two installed packages offering the same id are a `conflict`: neither loads.
+
+A rejected vocabulary is reported, never silently skipped:
+`vocabulary_registry().problems` lists it, `load_vocabulary(id)` raises with
+the reason, and `euler-suite report` / `euler-suite doctor` show it through the
+`metric_vocabulary_report` capability. `EULER_EXTENSIONS_STRICT=1` makes the
+registry raise instead. The TS artifact carries only the shipped vocabularies
+(`vocabulary_documents(builtin_only=True)`); consumers never need a
+vocabulary, because every results file carries its own snapshot of the terms.
+
+To add a vocabulary to this package itself, add
+`contract/vocabularies/<id>.json`, run `uv run pytest`, and regenerate the TS
+data (`python scripts/generate_ts.py`).
 
 ## Versioning
 

@@ -6,8 +6,10 @@ Producers build the ``protocol`` block of a results file with
 :func:`compare` / :func:`compare_files`. Training runs (``docs/training.md``)
 declare their telemetry with metric definitions and record validation sets,
 whose passes :func:`load_validation_pass` turns into evaluations for the same
-engine. Everything is dependency-free; the same contract ships as a TS
-artifact in ``contract/ts/``.
+engine. Vocabularies come from one registry: the shipped ones and those
+installed packages declare in the ``euler.vocabularies`` entry-point group
+(:mod:`.vocabulary`). The same contract ships as a TS artifact in
+``contract/ts/``.
 """
 from __future__ import annotations
 
@@ -54,7 +56,12 @@ from .training import (
     validation_pass_problems,
     validation_set_problems,
 )
-from .validate import ProtocolValidationError, check_protocol, protocol_problems
+from .validate import (
+    ProtocolValidationError,
+    check_protocol,
+    protocol_problems,
+    vocabulary_problems,
+)
 from .verdict import (
     Reason,
     Verdict,
@@ -66,11 +73,18 @@ from .verdict import (
     relevant_keys,
 )
 from .vocabulary import (
+    VOCABULARIES_GROUP,
+    UnknownVocabularyError,
     Vocabulary,
+    VocabularyError,
+    VocabularyRegistry,
     VocabularySet,
     available_vocabularies,
+    builtin_vocabularies,
     load_vocabulary,
+    reload_vocabularies,
     vocabulary_documents,
+    vocabulary_registry,
 )
 
 __all__ = [
@@ -79,16 +93,21 @@ __all__ = [
     "TRAINING_SCHEMA_VERSION",
     "VALIDATION_SET_KIND",
     "VALIDATION_SET_SCHEMA_VERSION",
+    "VOCABULARIES_GROUP",
     "CanonicalizationError",
     "EvalFile",
     "Problem",
     "ProtocolBuilder",
     "ProtocolValidationError",
     "Reason",
+    "UnknownVocabularyError",
     "Verdict",
     "Vocabulary",
+    "VocabularyError",
+    "VocabularyRegistry",
     "VocabularySet",
     "available_vocabularies",
+    "builtin_vocabularies",
     "canonicalize",
     "check_protocol",
     "closed_sets",
@@ -126,6 +145,7 @@ __all__ = [
     "recompute",
     "recompute_cell",
     "relevant_keys",
+    "reload_vocabularies",
     "schema_major",
     "sqrt_equal_width_edges",
     "sqrt_stratification",
@@ -138,4 +158,6 @@ __all__ = [
     "validation_pass_problems",
     "validation_set_problems",
     "vocabulary_documents",
+    "vocabulary_problems",
+    "vocabulary_registry",
 ]

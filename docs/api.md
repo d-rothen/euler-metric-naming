@@ -306,22 +306,36 @@ its declarations are ignored by `compare_stages` and `filter_kind`.
 
 ## Modality validation
 
-With no extras installed, modality validation is limited to the metric segment
-rules. Installing the `contract` extra enables a soft lookup against
-`euler-dataset-contract`:
+Modality names are looked up in the
+[`euler-dataset-contract`](https://github.com/d-rothen/euler-dataset-contract)
+registry (a dependency-free requirement of this package). Unknown names issue
+a warning rather than failing construction, so custom modalities remain
+possible.
 
-```bash
-pip install "euler-metric-naming[contract]"
-```
+## Capability report
 
-Unknown registry entries issue a warning rather than failing construction, so
-custom modalities remain possible and the core package stays dependency-free.
+`euler_metric_naming.capabilities.capability_report()` is registered in the
+suite's `euler.capabilities` group, so `euler-suite report` and euler-view see
+what an environment's installation can do (`metric_vocabulary_report` 1.0):
+
+| Field | Holds |
+|---|---|
+| `contract` | `{"kind": "metric_vocabulary_report", "version": "1.0"}` |
+| `package` | `{"name": "euler-metric-naming", "version"}` |
+| `naming` | the name grammar `{scope}.{context}.{axes...}.{metric}`, contexts, reserved scopes |
+| `protocol` | `schema_version` written (`2.0`) and `supported_majors` (`[1, 2]`) |
+| `training_naming`, `validation_set` | the schema versions written |
+| `extension_group` | `{"group": "euler.vocabularies", "api_version"}` |
+| `vocabularies` | per registered vocabulary: `id`, `version`, `tag`, `context`, `title`, `terms` (counts of descriptors, metrics, reducers, stratificationSchemes) and `provider` (`{"kind": "builtin", "distribution", "version"}` or `{"kind": "entry_point", "name", "target", "distribution", "version"}`) |
+| `schemas` | the shipped JSON Schemas: `name` (`vocabulary-1`, …), `file`, `id` |
+| `extension_problems` | rejected installed vocabularies: `group`, `name`, `code` (`conflict`, `load_failed`, `invalid`, `api_version`, `shadows_builtin`), `message`, `distributions` |
 
 ## Comparison contract (`euler_metric_naming.contract`)
 
 The evaluation protocol contract, schema 2, is defined normatively in
 [contract.md](contract.md); terms are authored as described in
-[vocabulary.md](vocabulary.md). Everything below is dependency-free.
+[vocabulary.md](vocabulary.md). Everything below needs nothing beyond the
+dependency-free contract package.
 
 ### Producers: `ProtocolBuilder`
 
@@ -401,7 +415,10 @@ verdict.to_dict()
 | `manifest_hash(ids)`, `hash_value(value)`, `canonicalize(value)` | §9 hashes and RFC 8785 text |
 | `evaluate_condition(cond, parameters, observations)` | §7 (True / False / None) |
 | `measure(kind, a, b)`, `phrase(...)`, `format_percent`, `format_sig3` | §3.3 |
-| `load_vocabulary(id)`, `available_vocabularies()`, `VocabularySet` | vocabulary lookup |
+| `load_vocabulary(id)`, `available_vocabularies()`, `builtin_vocabularies()`, `VocabularySet` | vocabulary lookup in the registry (shipped + `euler.vocabularies` entry points); unknown or rejected ids raise `UnknownVocabularyError` (a `KeyError`) with the reason |
+| `vocabulary_registry()`, `reload_vocabularies()` | the registry (`.vocabularies` with `provider`, `.problems`) and a rebuild after installing a package in-process |
+| `vocabulary_problems(document)` | every `vocabulary-1` problem of a document (dependency-free) |
+| `vocabulary_documents(builtin_only=False)` | registered documents by id |
 | `legacy_table()`, `normalize_legacy(...)` | the frozen v1 adapter |
 
 ### Training runs and validation sets

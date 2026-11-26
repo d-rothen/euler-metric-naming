@@ -71,7 +71,7 @@ def render() -> str:
         "",
         "/** The shipped vocabularies by id (contract/vocabularies). */",
         "export const VOCABULARIES: { readonly [id: string]: GeneratedJson } = "
-        f"{_json(vocabulary_documents())};",
+        f"{_json(vocabulary_documents(builtin_only=True))};",
         "",
         "/** The frozen schema-1 adapter table (contract/legacy/protocol-1.json). */",
         f"export const LEGACY_PROTOCOL_1: GeneratedJson = {_json(legacy_table())};",

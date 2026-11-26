@@ -12,12 +12,8 @@ cd euler-metric-naming
 uv sync --extra dev          # or: pip install -e ".[dev]"
 ```
 
-The core package intentionally has no dependencies. To exercise the optional
-modality registry integration as well, add the `contract` extra:
-
-```bash
-uv sync --extra dev --extra contract
-```
+The only runtime dependency is the dependency-free `euler-dataset-contract`
+(modality registry and the suite's extension protocol); keep it that way.
 
 ## Checks
 
@@ -51,8 +47,9 @@ uvx twine check dist/*
 - Existing metric strings and serialized field names are public contracts.
 - Axis order comes from `AxisDeclaration.position`, not dictionary key order.
 - Optional axes must always leave at least one segment for the base metric.
-- The dependency-free install must continue to work without
-  `euler-dataset-contract`.
+- No runtime dependency beyond `euler-dataset-contract`.
+- Every vocabulary, shipped or installed, goes through the one registry in
+  `contract/vocabulary.py`; a rejected one is reported, never skipped.
 - Public symbols should remain importable from `euler_metric_naming` and be
   listed in `__all__`.
 

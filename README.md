@@ -80,10 +80,13 @@ flowchart LR
 pip install euler-metric-naming
 ```
 
-The core package has no runtime dependencies. Install
-`euler-metric-naming[contract]` to additionally warn when a modality is not in
-the [`euler-dataset-contract`](https://github.com/d-rothen/euler-dataset-contract)
-registry.
+The only runtime dependency is the dependency-free
+[`euler-dataset-contract`](https://github.com/d-rothen/euler-dataset-contract):
+modality names are checked against its registry, and vocabularies other
+packages install arrive through its extension protocol (entry-point group
+`euler.vocabularies`, see [docs/vocabulary.md](docs/vocabulary.md#installing-a-vocabulary-from-your-own-package)).
+`euler-suite report` shows what an installation can do through the
+`metric_vocabulary_report` capability ([docs/api.md](docs/api.md#capability-report)).
 
 ## Quick start: training metrics
 
@@ -239,7 +242,8 @@ A verdict is `same protocol`, `compared on N shared files`,
 `comparable · <reason>` or `not comparable · <reason>`. Producers build the
 block with `ProtocolBuilder`, which copies the terms they use from the shipped
 vocabularies (`euler.core`, `euler.sky`, `euler.depth`, `euler.rgb`,
-`euler.rays`, `euler.points3d`, and `euler.train` for training telemetry);
+`euler.rays`, `euler.points3d`, and `euler.train` for training telemetry) or
+from vocabularies other packages install;
 schema-1 files are read through a frozen
 legacy adapter. The package also ships the JSON Schemas, a dependency-free TS
 port for consumers (`euler_metric_naming/contract/ts/`) and conformance

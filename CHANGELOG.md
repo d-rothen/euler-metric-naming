@@ -1,5 +1,51 @@
 # Changelog
 
+## 0.5.0
+
+### Added
+
+- **Installed vocabularies** (`euler.vocabularies` entry points, the suite's
+  extension protocol from `euler-dataset-contract` 0.23): a package declares
+  `"mylab.thermal" = "my_lab.euler:VOCAB"` and `load_vocabulary("mylab.thermal")`,
+  `ProtocolBuilder(..., ["euler.core", "mylab.thermal"])` use it in every
+  process of that environment. The value is a mapping, a JSON path (absolute
+  or relative to the declaring module) or a zero-argument callable returning
+  either. See [docs/vocabulary.md](docs/vocabulary.md#installing-a-vocabulary-from-your-own-package).
+- **One vocabulary registry**: shipped and installed vocabularies go through
+  the same registration (validated as `vocabulary-1` documents, id equal to
+  the registered name, registered once) and carry a `provider`
+  (`builtin` or `entry_point` with distribution and version).
+  `vocabulary_registry()`, `reload_vocabularies()`, `builtin_vocabularies()`.
+  A shipped id cannot be redefined (`shadows_builtin`); conflicts, import
+  failures and invalid documents are reported in `.problems`, and
+  `load_vocabulary` of a rejected id raises with the reason.
+  `EULER_EXTENSIONS_STRICT=1` raises instead.
+- `vocabulary_problems(document)`: dependency-free `vocabulary-1` validation
+  (checked against the JSON Schema in the test suite); `VocabularyError`,
+  `UnknownVocabularyError` (a `KeyError`).
+- **Capability report** `metric_vocabulary_report` 1.0
+  (`euler_metric_naming.capabilities.capability_report`), registered in
+  `euler.capabilities` as `euler-metric-naming`: naming grammar, protocol /
+  training naming / validation set versions, every vocabulary with version,
+  term counts and provider, the shipped schemas, and extension problems.
+  `euler-suite report` and euler-view read it per environment.
+
+### Changed
+
+- `euler-dataset-contract>=0.23.0` is now a runtime dependency (it has no
+  dependencies itself); modality names are always checked against its
+  registry.
+- `available_vocabularies()` and `vocabulary_documents()` include installed
+  vocabularies; `vocabulary_documents(builtin_only=True)` gives the shipped
+  ones (the TS artifact is generated from these, so its data is unchanged
+  apart from the package version).
+- Plain vocabulary documents passed to `VocabularySet` / `ProtocolBuilder` are
+  validated and raise `VocabularyError` when invalid.
+
+### Removed
+
+- The `contract` extra (the contract is a dependency now) and its CI job.
+
 ## 0.4.0
 
 ### Added

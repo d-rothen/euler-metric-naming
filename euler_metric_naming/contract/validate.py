@@ -360,5 +360,88 @@ def check_protocol(protocol: Any) -> None:
         raise ProtocolValidationError(problems)
 
 
+# -- vocabulary documents (vocabulary-1.schema.json) ------------------------------------
+
+_VOCABULARY_ID_RE = re.compile(r"^[a-z0-9]+(\.[a-z0-9_]+)+$")
+_DESCRIPTOR_KEY_RE = re.compile(r"^[a-z0-9_]+(\.[a-z0-9_]+)+$")
+_METRIC_BASE_RE = re.compile(r"^[a-z0-9_]+(\.[a-z0-9_]+)*$")
+_REQUIRED_METRIC_FIELDS = ("id", "kind", "rev", "displayName", "direction")
+VOCABULARY_CONTEXTS = ("eval", "train")
+
+
+def vocabulary_problems(document: Any) -> list[str]:
+    """Every problem of a vocabulary document (``vocabulary-1.schema.json``).
+
+    Dependency-free; the same rules as the JSON Schema, which the test suite
+    checks against ``jsonschema`` for the shipped vocabularies.
+    """
+    if not isinstance(document, dict):
+        return ["a vocabulary must be an object"]
+    problems: list[str] = []
+    vid = document.get("id")
+    if not (isinstance(vid, str) and _VOCABULARY_ID_RE.match(vid)):
+        problems.append("id must be a dotted lower-case id such as 'mylab.thermal'")
+    version = document.get("version")
+    if not (isinstance(version, str) and _VERSION_RE.match(version)):
+        problems.append("version must be '<major>.<minor>'")
+    if "context" in document and document["context"] not in VOCABULARY_CONTEXTS:
+        problems.append(f"context must be one of {', '.join(VOCABULARY_CONTEXTS)}")
+    for field in ("title", "description", "$schema"):
+        if field in document and not isinstance(document[field], str):
+            problems.append(f"{field} must be a string")
+
+    sections = (
+        ("descriptors", _DESCRIPTOR_KEY_RE, descriptor_problems, True),
+        ("metrics", _METRIC_BASE_RE, metric_problems, True),
+        ("reducers", None, reducer_problems, True),
+        ("stratificationSchemes", None, _scheme_problems, False),
+    )
+    for section, key_re, term_problems, required in sections:
+        if section not in document:
+            if required:
+                problems.append(f"{section} is required")
+            continue
+        terms = document[section]
+        if not isinstance(terms, dict):
+            problems.append(f"{section} must be an object")
+            continue
+        for key, term in terms.items():
+            path = f"{section}.{key}"
+            if key_re is not None and not key_re.match(key):
+                problems.append(f"{path}: key does not match {key_re.pattern}")
+            problems.extend(term_problems(term, path))
+            if not isinstance(term, dict):
+                continue
+            if "vocabulary" in term and section != "stratificationSchemes":
+                problems.append(
+                    f"{path} must not carry a vocabulary tag (producers add it)"
+                )
+            if section == "metrics":
+                for field in _REQUIRED_METRIC_FIELDS:
+                    if field not in term:
+                        problems.append(f"{path}.{field} is required")
+                for field in ("id", "displayName", "description"):
+                    if field in term and not isinstance(term[field], str):
+                        problems.append(f"{path}.{field} must be a string")
+                if "unit" in term and not (term["unit"] is None or isinstance(term["unit"], str)):
+                    problems.append(f"{path}.unit must be a string or null")
+            if section == "reducers":
+                for field in ("over", "label", "description"):
+                    if field in term and not isinstance(term[field], str):
+                        problems.append(f"{path}.{field} must be a string")
+    return problems
+
+
+def _scheme_problems(scheme: Any, path: str) -> list[str]:
+    if not isinstance(scheme, dict):
+        return [f"{path} must be an object"]
+    problems = []
+    if not isinstance(scheme.get("label"), str):
+        problems.append(f"{path}.label is required (a string)")
+    if "description" in scheme and not isinstance(scheme["description"], str):
+        problems.append(f"{path}.description must be a string")
+    return problems
+
+
 def _string_list(value: Any) -> bool:
     return isinstance(value, list) and all(isinstance(item, str) for item in value)

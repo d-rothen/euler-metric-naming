@@ -1,7 +1,6 @@
 """Tests for the euler-metric-naming package."""
 from __future__ import annotations
 
-import importlib.util
 from importlib.metadata import version
 
 import pytest
@@ -29,11 +28,7 @@ class TestMetricNamespaceInit:
     def test_package_version(self):
         assert __version__ == version("euler-metric-naming")
 
-    @pytest.mark.skipif(
-        importlib.util.find_spec("euler_dataset_contract") is None,
-        reason="optional modality contract is not installed",
-    )
-    def test_optional_contract_warns_for_unknown_modality(self):
+    def test_contract_warns_for_unknown_modality(self):
         with pytest.warns(UserWarning, match="not in euler-dataset-contract"):
             MetricNamespace(
                 producer="test",
